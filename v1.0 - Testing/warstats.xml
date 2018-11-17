@@ -1,0 +1,4 @@
+<?xml version="1.0" encoding="ISO-8859-1"?>
+<GetWarStatsXbox360>
+	<Result WarXpLight="0" WarXpDark="0" WarXpVoid="0" CharCountLight="0" CharCountDark="0" CharCountVoid="0" BossCountLight="0" BossCountDark="0" BossCountVoid="0" ChallengeWinsLight="0" ChallengeWinsDark="0" ChallengeWinsVoid="0" />
+</GetWarStatsXbox360>
