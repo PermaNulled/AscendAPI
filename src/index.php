@@ -3,6 +3,7 @@ require_once("steamauth.php");
 require_once("game_save.php");
 require_once("sproc.php");
 require_once("sequence.php");
+require_once("response_xml.php");
 
 header("ETag: ".rand(100,123)."-a"); // Not a real ETag header, but it'll fool the game.
 header('Content-type: text/xml');
@@ -31,6 +32,20 @@ switch($path)
 
 	case "/users/me/id":
 			// Seems to be unused currently
+	break;
+
+	case "/game/verifystrings":
+
+		header('Content-type: text/json');
+
+		/*
+		 We honestly don't care what name they use,
+		 We may want to check that it's not the same as someone else in the future though.
+		*/
+		print('[ { "Result": "OK" } ]'); 
+
+		$length = ob_get_length(); 
+		header("Content-Length: $length");
 	break;
 }
 

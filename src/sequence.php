@@ -22,14 +22,13 @@ class Sequence {
 	{
 		//TODO: Pull from database based on provided XUID...
 		//Doing so obviously has risks of it's own (like account hijacking, this implementation they had sucks)
-
 		$res = $this->resp->add_result();
 		$res->add_attribute("XUID",$this->xuid);
 		$res->add_attribute("SteamId",$this->xuid);
-		$res->add_attribute("SteamOfferId",0);
-		$res->add_attribute('SteamOrderId',0);
+		$res->add_attribute("SteamOfferId","0");
+		$res->add_attribute('SteamOrderId',"0");
 		$res->add_attribute("MarketplaceState",0);
-		$res->add_attribute("CharacterID",0);
+		//$res->add_attribute("CharacterID",0); // if we don't return a CharacterID there is no character and you should create one.
 		$res->add_attribute("HideHelmet", 0);
 		$res->add_attribute("PendingSouls",0);
 		$res->add_attribute("SystemSouls",0);
@@ -38,28 +37,28 @@ class Sequence {
 		$res->add_attribute("SoulGift",0);
 		$res->add_attribute("SoulUpdateId",0);
 		$res->add_attribute("BossGotKill","false");
-		$res->add_attribute("Souls",0);
+		$res->add_attribute("Souls",4000);
 		$res->add_attribute("AscState",0);
 		$res->add_attribute("Achievements",0);
-		$res->add_attribute("CharXp",0);
-		$res->add_attribute("CharXpAtStart",0);
-		$res->add_attribute("CharXpAtAsc",0);
-		$res->add_attribute("CharXpAsync",0);
-		$res->add_attribute("CharLevelCap",0);
-		$res->add_attribute("AscLevelReqInc",0);
-		$res->add_attribute("TranscCount",0);
-		$res->add_attribute("AscCountLight",0);
-		$res->add_attribute("AscCountDark",0);
-		$res->add_attribute("AscCountVoid",0);
-		$res->add_attribute("WarXp",0);
-		$res->add_attribute("WarXpAsync",0);
-		$res->add_attribute("WarXpLight",0);
-		$res->add_attribute("WarXpDark",0);
-		$res->add_attribute("WarXpVoid",0);
-		$res->add_attribute("GameTime",0);
-		$res->add_attribute("OfflineTime",0);
+		$res->add_attribute("CharXp","0");
+		$res->add_attribute("CharXpAtStart","0");
+		$res->add_attribute("CharXpAtAsc","0");
+		$res->add_attribute("CharXpAsync","0");
+		$res->add_attribute("CharLevelCap",-1); // code sets this by default
+		$res->add_attribute("AscLevelReqInc",-1); // code sets this by default
+		$res->add_attribute("TranscCount","0");
+		$res->add_attribute("AscCountLight","0");
+		$res->add_attribute("AscCountDark","0");
+		$res->add_attribute("AscCountVoid","0");
+		$res->add_attribute("WarXp","0");
+		$res->add_attribute("WarXpAsync","0");
+		$res->add_attribute("WarXpLight","0");
+		$res->add_attribute("WarXpDark","0");
+		$res->add_attribute("WarXpVoid","0");
+		$res->add_attribute("GameTime","0");
+		$res->add_attribute("OfflineTime","0");
 		$res->add_attribute("ContentVersion","1.2.3"); // TODO: Verify how this is used.
-		$res->add_attribute("SessionId",12345); // TODO: Generate randomly and store some where.
+		$res->add_attribute("SessionId","22"); // TODO: Randomly generate this
 		$res->add_attribute("Banned",0);
 		$this->resp->run();
 
