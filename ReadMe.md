@@ -8,7 +8,7 @@ Extremely dirty proof of concept to figure out how the game was handling data, t
 It attempts to do some additional work here but I don't think I'm returning the appropriate data for it to continue into the game.
 
 ## V2.0 
-A complete re-write of the original PoC in order to make things easier to manage and be able to return dynamic results, as it currently stands this is crashing the game and I haven't discovered why yet...
+A complete re-write of the original PoC which gets stuck at the same point as V1.0, V1.0 will most likely be removed from the repo now that v2.0 no longer crashes the game.
 
 ### Additional issues / problems
 
