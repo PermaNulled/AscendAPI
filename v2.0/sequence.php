@@ -24,8 +24,8 @@ class Sequence {
 		//Doing so obviously has risks of it's own (like account hijacking, this implementation they had sucks)
 
 		$res = $this->resp->add_result();
-		$res->add_attribute("XUID",$xuid);
-		$res->add_attribute("SteamId",$xuid);
+		$res->add_attribute("XUID",$this->xuid);
+		$res->add_attribute("SteamId",$this->xuid);
 		$res->add_attribute("SteamOfferId",0);
 		$res->add_attribute('SteamOrderId',0);
 		$res->add_attribute("MarketplaceState",0);
