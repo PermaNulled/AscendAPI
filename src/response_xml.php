@@ -1,4 +1,5 @@
 <?php
+
 class Result{
 	public $attributes = array();
 
@@ -36,11 +37,11 @@ class Response{
 				$res->addAttribute($attribute[0],$attribute[1]);
 			}
 		}
-
 		print($this->xml->asXML());
 		$length = ob_get_length(); 
 		header("Content-Length: $length");
-		
+
+
 		exit;
 	}
 };

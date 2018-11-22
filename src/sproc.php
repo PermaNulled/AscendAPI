@@ -1,11 +1,23 @@
 <?php
 require_once("response_xml.php");
+require_once("dbconf.php");
 
 class Sproc {
 	private $sproc = "";
 	private $xuid = 0;
+	private $steamid = 0;
 	private $target = 0;
 	private $resp = null;
+	private $mysql_conn = null;
+
+	//AddSouls3Xbox360
+	//UpdatePlayerItem3Xbox360
+	//BuyCustomizerItemXbox360
+	//ReRollStoreXbox360
+	//EnterPurgatoryXbox360
+	//AddPlayerConsumableXbox360
+	//UpgradeItemXbox360
+	//AddPlayerAbilityXbox360
 
 	function run()
 	{
@@ -21,16 +33,103 @@ class Sproc {
      	}
 
 	}
-	
-	/*
-	/game/sproc?sproc=CreateCharacter4Xbox360&xuid=123457&sessionId=22&align=0&bodyParts=Head02%2CNoHair%2CNoBeard%2CCaosBody%2CCaosHands%2CCaosFeet%2C&skinColor=AgDz8nI%2F19ZWP8zLSz8AAIA%2F&equipNames=Starting_Armor_02_Helmet%2C%2C%2CStarting_Armor_02_Chest%2CStarting_Armor_02_Gauntlets%2CStarting_Armor_03_Boots%2C2HS_Starting_Basic&equipResIds=324%2C65535%2C65535%2C205%2C331%2C207%2C1&equipIds=0%2C0%2C0%2C0%2C0%2C0%2C0&hairColor=AgDz8nI%2F19ZWP8zLSz8AAIA%2F&name=AFAAZQByAG0AYQBOAHUAbABs
-	*/
+
+
+	function AddPlayerConsumableXbox360()
+	{
+		$res = $this->resp->add_result();
+		$res->add_attribute("OK",1);
+		$this->resp->run();
+	}
+
+	function UpgradeItemXbox360()
+	{
+
+		/*
+			Response:
+				Level
+		*/
+		$res = $this->resp->add_result();
+		$res->add_attribute("Error",1);
+		$this->resp->run();
+	}
+
+	function AddPlayerAbilityXbox360()
+	{
+		/*
+			Request: /game/sproc?sproc=AddPlayerAbilityXbox360&xuid=123457&sessionId=22&name=Dark_Fireball
+			Potential response must contain: Id, Upgrades, Keep, Name 
+		*/
+		//This works for now, ID is most likely unique to the server side in some way.
+		$res = $this->resp->add_result(); 
+		$res->add_attribute("Id","99");
+		$res->add_attribute("Upgrades","0");
+		$res->add_attribute("Keep","1");
+		$res->add_attribute("Name",$_GET['name']);
+		$this->resp->run();
+
+	}
+
+	function ReRollStoreXbox360()
+	{
+		$res = $this->resp->add_result();
+		$res->add_attribute("Error",1);
+		$this->resp->run();
+	}
+
+	function BuyCustomizerItemXbox360()
+	{
+		$res = $this->resp->add_result();
+		$res->add_attribute("Error",1);
+		$this->resp->run();
+	}
+
+	function UpdatePlayerItem3Xbox360()
+	{
+		/* The handler for this function is quite strange, we'll just try an JSON handler "OK" for now */
+		$res = $this->resp->add_result();
+		$res->add_attribute("Error",1);
+		$this->resp->run();
+	}
+
+	function AddSouls3Xbox360()
+	{
+		$res = $this->resp->add_result();
+		$res->add_attribute("Error",1);
+		$this->resp->run();
+	}
 
 	function CreateCharacter4Xbox360()
 	{
+		$alignment = mysql_real_escape_string($_GET['align']);
+		$name = mysql_real_escape_string(base64_decode($_GET['name']));
+		$bodyparts = mysql_real_escape_string($_GET['bodyParts']);
+		$equipResIds = mysql_real_escape_string($_GET['equipResIds']);
+		$skinColor = mysql_real_escape_string($_GET['skinColor']);
+		$hairColor = mysql_real_escape_string($_GET['hairColor']);
+		$equipNames = mysql_real_escape_string($_GET['equipNames']);
+
+		$query = "INSERT INTO characters (SteamID,Alignment,Name,bodyParts,EquipmentIds,SkinColor,hairColor,Equipment) VALUES ('$this->steamid','$alignment','$name','$bodyparts','$equipResIds','$skinColor','$hairColor','$equipNames');";
+		$q = mysql_query($query) or die(error_log(" (insert) Ascender API encountered an MySQL error! Error: ".mysql_error(). " query: ".$query));
+		$character_id = mysql_insert_id();
+
+		$uq = mysql_query("UPDATE accounts SET CharacterID='$character_id' WHERE SteamId='$this->steamid'") or die(error_log("(update) Ascender API encountered a MySQL error! error: ".mysql_error()));
+
+
 		$res = $this->resp->add_result();
-		$res->add_attribute("Equipment","Starting_Armor_02_Helmet,,,Starting_Armor_02_Chest,Starting_Armor_02_Gauntlets,Starting_Armor_03_Boots,2HS_Starting_Basic");
+		$res->add_attribute("Id",1);
+		$res->add_attribute("CreatorXuid",$_GET['xuid']);
+		$res->add_attribute("Alignment",$_GET['align']);
+		$res->add_attribute("Name",$_GET['name']);
+		$res->add_attribute("BodyParts",$_GET['bodyParts']);
+		$res->add_attribute("EquipmentIds",$_GET['equipResIds']);
+		$res->add_attribute("AbilityIds","0");
+		$res->add_attribute("MetaWarIds","0");
+		$res->add_attribute("SkinColor",$_GET['skinColor']);
+		$res->add_attribute("HairColor",$_GET['hairColor']);
+		$res->add_attribute("Equipment",$_GET['equipNames']);
 		$this->resp->run();
+
 	}
 
 	function UpdateCharacter5Xbox360()
@@ -65,6 +164,15 @@ class Sproc {
 	{
 		$res = $this->resp->add_result(); 
 
+		/*
+			Response:
+			Id
+			Name
+			SoulScalar
+			Type
+		*/
+
+
 		// probably does nothing, but we're not returning any data and it doesn't like it if there's not a Result.
 		$res->add_attribute("Id","Starting_Armor_01_Gauntlets");
 		$res->add_attribute("SoulScalar",1);
@@ -73,23 +181,143 @@ class Sproc {
 		$this->resp->run();
 	}
 
+	function AddStoreItem($name,$souls = "1",$type = "Hands")
+	{
+		$item = $this->resp->add_result();
+		$item->add_attribute("Name",$name);
+		$item->add_attribute("Souls",$souls);
+		$item->add_attribute("Type",$type);
+
+	}
+
 	function GetStoreItemsXbox360()
 	{
 
-		//Add more results for more items in the list
-		$res = $this->resp->add_result();
+		/* Response:
+			Name
+			Souls
+			Type
+		*/
 
-		//Some test item data, should probably pull this from a db or something in the future.
-		//TODO: Reverse Item names and types.
-		$res->add_attribute("Name","Starting_Armor_01_Gauntlets");
-		$res->add_attribute("Souls",0);
-		$res->add_attribute("Type","HANDS");
+		//Add more results for more items in the list
+		/*
+				Types:
+					HEAD
+					BODY
+					HANDS
+					FEET
+					WEAPON
+		*/
+
+		$this->AddStoreItem("1H_Starting_Basic","1","WEAPON");
+		$this->AddStoreItem("2HS_Starting_Basic","1","WEAPON");
+		$this->AddStoreItem("2H_Starting_Basic","1","WEAPON");
+		$this->AddStoreItem("1H_starting_Uncommon","1","WEAPON");
+		$this->AddStoreItem("2HS_Starting_Uncommon","1","WEAPON");
+		$this->AddStoreITem("2H_Starting_Uncommon","1","WEAPON");
+		$this->AddStoreItem("1H_starting_Store","1","WEAPON");
+		$this->AddStoreItem("2HS_Starting_Store","1","WEAPON");
+		$this->AddStoreItem("2H_Starting_Store","1","WEAPON");
+		$this->AddStoreItem("Starting_Armor_01_Chest","1","BODY");
+		$this->AddStoreItem("Starting_Armor_01_Boots","1","FEET");
+		$this->AddStoreItem("Starting_Armor_01_Gauntlets","1","HANDS");
+		$this->AddStoreItem("Starting_Armor_01_Helmet","1","HEAD");
+		$this->AddStoreItem("Starting_Armor_02_Chest","1","BODY");
+		$this->AddStoreItem("Starting_Armor_02_Boots","1","FEET");
+		$this->AddStoreItem("Starting_Armor_02_Gauntlets","1","HANDS");
+		$this->AddStoreItem("Starting_Armor_02_Helmet","1","HEAD");
+		$this->AddStoreItem("Starting_Armor_03_Chest","1","BODY");
+		$this->AddStoreItem("Starting_Armor_03_Boots","1","FEET");
+		$this->AddStoreItem("Starting_Armor_03_Gauntlets","1","HANDS");
+		$this->AddStoreItem("Starting_Armor_03_Helmet","1","HEAD");
+		$this->AddStoreItem("Armor_Dark01_Helmet_lvl1","1","HEAD");
+		$this->AddStoreItem("Armor_Dark01_Chest_lvl1","1","BODY");
+		$this->AddStoreItem("Armor_Dark01_Gauntlets_lvl1","1","HANDS");
+		$this->AddStoreItem("demo_armor_boots_general_01","1","FEET");
+		$this->AddStoreItem("Armor_Helmet_Void01","1","HEAD");
+		$this->AddStoreItem("Armor_Void01","1","BODY");
+		$this->AddStoreItem("Armor_Gauntlets_Void01","1","HANDS");
+		$this->AddStoreItem("Armor_Boots_Void01","1","FEET");
+		$this->AddStoreItem("Armor_Chain02_Helmet","1","HEAD");
+		$this->AddStoreItem("Armor_Chain02_Chest","1","BODY");
+		$this->AddStoreItem("Armor_Chain02_Gauntlets","1","HANDS");
+		$this->AddStoreItem("Armor_Chain02_Boots","1","FEET");
+		$this->AddStoreItem("Armor_Chain03_Helmet","1","HEAD");
+		$this->AddStoreItem("Armor_Chain03_Chest","1","BODY");
+		$this->AddStoreItem("Armor_Chain03_Gauntlets","1","HANDS");
+		$this->AddStoreItem("Armor_Chain03_Boots","1","FEET");
+		$this->AddStoreItem("Armor_Helmet_Void02","1","HEAD");
+		$this->AddStoreItem("CaosPlateArmor","1","BODY");
+		$this->AddStoreItem("Armor_Rust_Gauntlets","1","HANDS");
+		$this->AddStoreItem("Armor_Rust_Boots","1","FEET");
+		$this->AddStoreItem("Armor_Leather04_Helmet","1","HEAD");
+		$this->AddStoreItem("Armor_Leather04_Chest","1","BODY");
+		$this->AddStoreItem("Armor_Leather04_Gauntlets","1","HANDS");
+		$this->AddStoreItem("Armor_Leather04_Boots","1","FEET");
+
+
 
 		$this->resp->run();
+		/*
+		//Some test item data, should probably pull this from a db or something in the future.
+		//TODO: Reverse Item names and types.
+		$res->add_attribute("Name","Head15");
+		$res->add_attribute("Souls",1);
+		$res->add_attribute("Type","HANDS");*/
+
 	}
 
 	function GetPlayerItems1Xbox360() // PlayerSpecific Requires XUID
 	{
+
+		/*
+			Response:
+			Id
+			Level
+			Xuid
+			Keep
+			DurabilityLost
+			ResIdx
+			Name
+			Rune0
+			Rune1
+			Rune2
+
+		*/
+
+		$query = "SELECT Equipment,EquipmentIds FROM characters WHERE SteamId='$this->steamid';";
+		$q = mysql_query($query) or die("Ascend API had an MySQL error (GetPlayerItems1Xbox360) error: ".mysql_error());
+
+		if(mysql_num_rows($q) > 0)
+		{
+
+			$row = mysql_fetch_object($q);
+
+			$equipments = explode(",",$row->Equipment);
+			$equipids = explode(",",$row->EquipmentIds);
+
+			$index = 0;
+			foreach($equipments as $equipment)
+			{
+				if(strlen($equipment) > 0)
+				{	
+					$res = $this->resp->add_result();
+
+					$res->add_attribute("Id",mt_rand());
+					$res->add_attribute("Name",$equipment);
+					$res->add_attribute("Level","1");
+					$res->add_attribute("Xuid",$this->steamid);
+					$res->add_attribute("DruabilityLost","0");
+					$res->add_attribute("ResIdx",$equipids[$index]);
+
+				}
+				$index++;
+			}
+
+
+
+		}
+
 		//TODO: Implement database functionality to actually store player items and return here!
 		//$res = $this->resp->add_result();
 		//$res->add_attribute("Error",1);
@@ -122,6 +350,14 @@ class Sproc {
 
 	function GetPlayerAbilitiesXbox360() // Player Specific Requires XUID
 	{
+
+		/*
+			Response
+			Id
+			Upgrades
+			Keep
+			Name
+		*/
 		//TODO: Implement some database functionality, and return appropriate results
 		//$res = $this->resp->add_result();
 		//$res->add_attribute("Error",1);
@@ -130,21 +366,152 @@ class Sproc {
 
 	function GetCustomizerItemsXbox360() // Player Specific Requires XUID
 	{
-		//TODO: Implement some database functionality, and return appropriate results
-		//$res = $this->resp->add_result();
-		//$res->add_attribute("Error",1);
+		//Head01,NoHair,NoBeard,CaosBody,CaosHands,CaosFeet,
+		$query = "SELECT bodyParts,Equipment FROM characters WHERE SteamId='$this->steamid';";
+		$q = mysql_query($query) or die("Ascend API had an MySQL error (GetCustomizerItemsXbox360) error: ".mysql_error());
+
+		if(mysql_num_rows($q) > 0)
+		{
+
+			$row = mysql_fetch_object($q);
+			$items = explode(",",$row->bodyParts);
+			$equipments = explode(",",$row->Equipment);
+
+			foreach($items as $item)
+			{
+
+				if(strlen($item) > 0)
+				{
+					$res = $this->resp->add_result();
+					$res->add_attribute("Name",$item);
+				}
+			}
+
+			foreach($equipments as $equipment)
+			{
+				if(strlen($equipment) > 0)
+				{
+					$res = $this->resp->add_result();
+					$res->add_attribute("Name",$equipment);
+				}
+			}
+
+
+
+		}
+
 		$this->resp->run();
 	}
 
+
 	function GetStoreCustomizerItemsXbox360()
 	{
-		$res = $this->resp->add_result();
 
-		//Some test item data, should probably pull this from a db or something in the future.
-		//TODO: Reverse Item names and types.
-		$res->add_attribute("Name","Starting_Armor_01_Gauntlets");
-		$res->add_attribute("Souls",0);
-		$res->add_attribute("Type","HANDS");
+		/* Response:
+			Name
+			Souls
+			Type
+		*/
+
+		for($i = 0;$i<21;$i++)
+		{
+			$num_padded = sprintf("%02d", $i);
+			$this->AddStoreItem("Head$num_padded");
+		}
+
+		for($i = 0;$i<11;$i++)
+		{
+			$num_padded = sprintf("%02d", $i);
+			$this->AddStoreItem("Hair$num_padded");
+		}
+
+		for($i = 0;$i<10;$i++)
+		{
+			$num_padded = sprintf("%02d", $i);
+			$this->AddStoreItem("Beard$num_padded");
+		}
+
+		$this->AddStoreItem("1H_Starting_Basic","1","WEAPON");
+		$this->AddStoreItem("2HS_Starting_Basic","1","WEAPON");
+		$this->AddStoreItem("2H_Starting_Basic","1","WEAPON");
+		$this->AddStoreItem("1H_starting_Uncommon","1","WEAPON");
+		$this->AddStoreItem("2HS_Starting_Uncommon","1","WEAPON");
+		$this->AddStoreITem("2H_Starting_Uncommon","1","WEAPON");
+		$this->AddStoreItem("1H_starting_Store","1","WEAPON");
+		$this->AddStoreItem("2HS_Starting_Store","1","WEAPON");
+		$this->AddStoreItem("2H_Starting_Store","1","WEAPON");
+		$this->AddStoreItem("Starting_Armor_01_Chest","1","BODY");
+		$this->AddStoreItem("Starting_Armor_01_Boots","1","FEET");
+		$this->AddStoreItem("Starting_Armor_01_Gauntlets","1","HANDS");
+		$this->AddStoreItem("Starting_Armor_01_Helmet","1","HEAD");
+		$this->AddStoreItem("Starting_Armor_02_Chest","1","BODY");
+		$this->AddStoreItem("Starting_Armor_02_Boots","1","FEET");
+		$this->AddStoreItem("Starting_Armor_02_Gauntlets","1","HANDS");
+		$this->AddStoreItem("Starting_Armor_02_Helmet","1","HEAD");
+		$this->AddStoreItem("Starting_Armor_03_Chest","1","BODY");
+		$this->AddStoreItem("Starting_Armor_03_Boots","1","FEET");
+		$this->AddStoreItem("Starting_Armor_03_Gauntlets","1","HANDS");
+		$this->AddStoreItem("Starting_Armor_03_Helmet","1","HEAD");
+		$this->AddStoreItem("Armor_Dark01_Helmet_lvl1","1","HEAD");
+		$this->AddStoreItem("Armor_Dark01_Chest_lvl1","1","BODY");
+		$this->AddStoreItem("Armor_Dark01_Gauntlets_lvl1","1","HANDS");
+		$this->AddStoreItem("demo_armor_boots_general_01","1","FEET");
+		$this->AddStoreItem("Armor_Helmet_Void01","1","HEAD");
+		$this->AddStoreItem("Armor_Void01","1","BODY");
+		$this->AddStoreItem("Armor_Gauntlets_Void01","1","HANDS");
+		$this->AddStoreItem("Armor_Boots_Void01","1","FEET");
+		$this->AddStoreItem("Armor_Chain02_Helmet","1","HEAD");
+		$this->AddStoreItem("Armor_Chain02_Chest","1","BODY");
+		$this->AddStoreItem("Armor_Chain02_Gauntlets","1","HANDS");
+		$this->AddStoreItem("Armor_Chain02_Boots","1","FEET");
+		$this->AddStoreItem("Armor_Chain03_Helmet","1","HEAD");
+		$this->AddStoreItem("Armor_Chain03_Chest","1","BODY");
+		$this->AddStoreItem("Armor_Chain03_Gauntlets","1","HANDS");
+		$this->AddStoreItem("Armor_Chain03_Boots","1","FEET");
+		$this->AddStoreItem("Armor_Helmet_Void02","1","HEAD");
+		$this->AddStoreItem("CaosPlateArmor","1","BODY");
+		$this->AddStoreItem("Armor_Rust_Gauntlets","1","HANDS");
+		$this->AddStoreItem("Armor_Rust_Boots","1","FEET");
+		$this->AddStoreItem("Armor_Leather04_Helmet","1","HEAD");
+		$this->AddStoreItem("Armor_Leather04_Chest","1","BODY");
+		$this->AddStoreItem("Armor_Leather04_Gauntlets","1","HANDS");
+		$this->AddStoreItem("Armor_Leather04_Boots","1","FEET");
+		$this->AddStoreItem("NoHair");
+		$this->AddStoreItem("NoBeard");
+		$this->AddStoreItem("CustomizerColors");
+		$this->AddStoreItem("CustomizerColor_Skin1");
+		$this->AddStoreItem("CustomizerColor_Skin9");
+		$this->AddStoreItem("CustomizerColor_Brown");
+		$this->AddStoreItem("CustomizerColor_Brown_Dark");
+		$this->AddStoreItem("CustomizerColor_Brown_Dark2");
+		$this->AddStoreItem("CustomizerColor_Skin2");
+		$this->AddStoreItem("CustomizerColor_Skin3");
+		$this->AddStoreItem("CustomizerColor_Skin4");
+		$this->AddStoreItem("CustomizerColor_Skin5");
+		$this->AddStoreItem("CustomizerColor_Skin6");
+		$this->AddStoreItem("CustomizerColor_Skin7");
+		$this->AddStoreItem("CustomizerColor_Skin8");
+		$this->AddStoreItem("CustomizerColor_White");
+		$this->AddStoreItem("CustomizerColor_Purple");
+		$this->AddStoreItem("CustomizerColor_Green_Light");
+		$this->AddStoreItem("CustomizerColor_Orange");
+		$this->AddStoreItem("CustomizerColor_Blue_Dark");
+		$this->AddStoreItem("CustomizerColor_Green_Dark");
+		$this->AddStoreItem("CustomizerColor_Purple_Dark");
+		$this->AddStoreItem("CustomizerColor_Red_Dark");
+		$this->AddStoreItem("CustomizerColor_BlueGreen");
+		$this->AddStoreItem("CustomizerColor_Green");
+		$this->AddStoreItem("CustomizerColor_Blue");
+		$this->AddStoreItem("CustomizerColor_Teal");
+		$this->AddStoreItem("CustomizerColor_Blue_Light2");
+		$this->AddStoreItem("CustomizerColor_Red");
+		$this->AddStoreItem("CustomizerColor_Green2");
+		$this->AddStoreItem("CustomizerColor_Yellow");
+		$this->AddStoreItem("CustomizerColor_Orange_Dark");
+		$this->AddStoreItem("CustomizerColor_Purple_Light");
+		$this->AddStoreItem("CustomizerColor_Blue_Light");
+		$this->AddStoreItem("CustomizerColor_Black");
+
 
 		$this->resp->run();
 	}
@@ -338,15 +705,20 @@ class Sproc {
 
 	function __construct($params)
 	{
+		$this->mysql_conn = mysql_connect(db_host,db_user,db_pass) or die(error_log("AscenderAPI had a mysql error connecting! - ".mysql_error()));
+		mysql_select_db("ascender");
+
 		if(isset($params["xuid"]))
-			$this->xuid = $params["xuid"];
+			$this->steamid = mysql_real_escape_string($params["xuid"]);
 
 		if(isset($params['target']))
-			$this->target = $params["target"];
+			$this->target = mysql_real_escape_string($params["target"]);
 		
 		$this->sproc = $params["sproc"];
 
 		$this->resp = new Response($this->sproc);
+
+
 	}
 }
 
