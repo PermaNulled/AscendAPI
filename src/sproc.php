@@ -84,8 +84,46 @@ class Sproc {
 
 	}
 
+	///game/sproc?sproc=GetDynamicLevelItems2Xbox360&xuid=76561198058111756&levelId=33&levelSeed=208259609
+	// This function is used to determine items for the specific user.
+	// Part of this is checking if the user has unlocked these items yet.
+	// For now we'll return dummy data.
+
+	function GetDynamicLevelItems2Xbox360()
+	{
+		$levelId = (int)$_GET['levelId'];
+		$levelSeed = (int)$_GET['levelSeed'];
+		$q = "SELECT * FROM DynamicLevelItems WHERE levelId='$levelId' AND levelSeed='$levelSeed';";
+		$hq = mysql_query($q) or die(error_log('Ascender API encountered a MySQL error: '.mysql_error()));
+
+
+		if(mysql_num_rows($hq) > 0)
+		{
+			while($row = mysql_fetch_object($hq))
+			{
+				$res = $this->resp->add_result();
+				$res->add_attribute("Id",$row->Id);
+				$res->add_attribute("LevelId",$row->levelId);
+				$res->add_attribute("LevelSeed",$row->levelSeed);
+				$res->add_attribute('Floor',$row->floor);
+				$res->add_attribute('Y',$row->y);
+				$res->add_attribute('X',$row->x);
+				$res->add_attribute('ItemType',$row->itemType);
+				$res->add_attribute('Unlocked',"0");
+			}
+	
+		}else{
+			$res = $this->resp->add_result();
+			$res->add_attribute("Id","0");
+			$res->add_attribute("LevelId","-1");
+		}
+
+		$this->resp->run();
+	}
+
 	///game/sproc?sproc=GetDynamicLevelItems2Xbox360&xuid=76561198009394515&levelId=6&levelSeed=458952197
 	// Not really sure how this works.
+	// Added to it using debug client previously, the seeds are never random which is odd.
 	function AddDynamicLevelItemXbox360()
 	{
 		$levelId = (int)$_GET['levelId'];
