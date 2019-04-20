@@ -57,7 +57,7 @@ function handle_save_load($profile_id)
 			        "BaseUri"=>"http://new.thedefaced.org/",
 			        "GetUri"=>"game/save/load/".$profile_id,
 			        "PutUri"=>"game/save/put/".$profile_id,
-			     	"LastModified"=>"20181121000000",
+		     		"LastModified"=>"2018-11-21 00:00:00",
 			     	"Length"=>"".filesize("saves/".$profile_id.".savej")."",
 			     	"ETag"=>"a-112"
 			    ),

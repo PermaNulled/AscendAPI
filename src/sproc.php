@@ -1,6 +1,7 @@
 <?php
 require_once("response_xml.php");
 require_once("dbconf.php");
+require_once("store_popjson.php");
 
 class Sproc {
 	private $sproc = "";
@@ -10,15 +11,36 @@ class Sproc {
 	private $resp = null;
 	private $mysql_conn = null;
 
+
+	//TODO: Implement...
 	//AddSouls3Xbox360
 	//UpdatePlayerItem3Xbox360
 	//BuyCustomizerItemXbox360
 	//ReRollStoreXbox360
 	//EnterPurgatoryXbox360
-	//AddPlayerConsumableXbox360
-	//UpgradeItemXbox360
-	//AddPlayerAbilityXbox360
+	//ReRollStoreXbox360
+	//UpdatePlayerItem3Xbox360
+	//GetActiveWarChallengeXbox360
+	//GetWarRewardsXbox360
+	//GetStoreOffersXbox360
+	//GetRecentMsgsXbox360
+	//GetWarStatsXbox360
+	//GetPlayerBossesTopXbox360
+	//70.187.170.131 - - [26/Nov/2018:03:32:27 -0800] "GET /game/sequence?sequence=SlotRuneXbox360&xuid=76561198009394515&sessionId=473740457&runeId=19&itemId=8&slotIdx=0 HTTP/1.1" 200 15 "-" "Ascend"
+	//70.187.170.131 - - [26/Nov/2018:03:31:53 -0800] "GET /game/sproc?sproc=GetRecentMsgsXbox360&target=76561198009394515 HTTP/1.1" 200 46 "-" "Ascend"
+	//70.187.170.131 - - [26/Nov/2018:03:30:34 -0800] "GET /game/sproc?sproc=CapContentionPointXbox360&xuid=76561198009394515&sessionId=473740457&pointId=2&alignment=3 HTTP/1.1" 200 51 "-" "Ascend"
+	//70.187.170.131 - - [01/Dec/2018:03:52:19 -0800] "GET /game/sproc?sproc=GetTotemByLevelAndSeedXbox360&targetXuid=76561198009394515&levelId=6&levelSeed=458952197 HTTP/1.1" 200 55 "-" "Ascend"
+	//70.187.170.131 - - [01/Dec/2018:03:52:19 -0800] "GET /game/sproc?sproc=GetLevelItems1Xbox360&xuid=76561198009394515&levelId=6 HTTP/1.1" 200 47 "-" "Ascend"
+	//70.187.170.131 - - [01/Dec/2018:03:52:20 -0800] "GET /game/sproc?sproc=GetDynamicLevelItems2Xbox360&xuid=76561198009394515&levelId=6&levelSeed=458952197 HTTP/1.1" 200 54 "-" "Ascend"
+	//70.187.170.131 - - [02/Dec/2018:01:23:21 -0800] "GET /game/sproc?sproc=AddLevelItemAdmin&levelId=41&name=%2D4816%2D12268&x=41&y=553&itemType=0 HTTP/1.1" 200 22 "-" "Ascend"
+	//GetDynamicLevelItems2Xbox360
+	//GetTotemByLevelAndSeedXbox360
+	//Log:Database >> Sending query: AddDynamicLootSouls2Xbox360&xuid=76561198009394515&sessionId=410562881&souls=147&id=54
+	//!WARNING! >> Couldn't find loot drop for id 'Uncommon'
+	//Log:Database >> Sending query: AddDynamicLootItem1Xbox360&xuid=76561198009394515&sessionId=410562881&chestId=72&name=Armor_Component_179&resIdx=263
 
+	//TODO: Port to use PDO instead of standard MySQL bullshit that's been deprecated.
+	//TODO: Make generic error function for logging.
 	function run()
 	{
 
@@ -29,71 +51,337 @@ class Sproc {
      	}else{
      		error_log("[ERROR - ASCEND API] SPROC Attempted to access invalid method! - Sproc: ".$this->sproc);
      		// If API isn't valid just return nothing
-     		$this->resp->run();
+     		//$this->resp->run();
+
+     		header('Content-type: text/json');
+     		print('[ { "Result": "OK" } ]'); 
+
+			$length = ob_get_length(); 
+			header("Content-Length: $length");
      	}
 
 	}
 
+	function GetLevelItems1Xbox360()
+	{
+		$levelId = (int)$_GET['levelId'];
+		$liq = "SELECT * FROM LevelItems WHERE levelId='$levelId';";
+		$hli = mysql_query($liq) or die(error_log("Ascender API MySQL error: ".mysql_error()));
+
+		while($row = mysql_fetch_object($hli))
+		{
+			$res = $this->resp->add_result();
+			$res->add_attribute("Id",$row->Id);
+			$res->add_attribute("LevelId",$row->levelId);
+			$res->add_attribute("ItemType",$row->itemType);
+			$res->add_attribute("XOffset",$row->X);
+			$res->add_attribute("YOffset",$row->Y);
+			$res->add_attribute("Unlocked",$row->Unlocked);
+			$res->add_attribute("Name",$row->Name);
+		}
+
+		$this->resp->run();
+
+	}
+
+	///game/sproc?sproc=GetDynamicLevelItems2Xbox360&xuid=76561198009394515&levelId=6&levelSeed=458952197
+	// Not really sure how this works.
+	function AddDynamicLevelItemXbox360()
+	{
+		$levelId = (int)$_GET['levelId'];
+		$levelSeed =(int)$_GET['levelSeed'];
+		$floor = (int)$_GET['floor'];
+		$x = (int)$_GET['x'];
+		$y = (int)$_GET['y'];
+		$itemType = (int)$_GET['itemType'];
+
+		$q = "SELECT * FROM DynamicLevelItems WHERE levelId='$levelId' AND x='$x' AND y='$y';";
+		$hq = mysql_query($q) or die(error_log("Ascender API encountered a MySQL error: ".mysql_error()));
+		if(mysql_num_rows($hq) == 0)
+		{
+			$adliq = "INSERT INTO DynamicLevelItems (levelId,levelSeed,floor,x,y,ItemType) VALUES ('$levelId','$levelSeed','$floor','$x','$y','$itemType');";
+			$hadli = mysql_query($adliq) or die(error_log("Ascender API encountered MySQL error: ".mysql_error()));
+			$id = mysql_insert_id();
+			$res = $this->resp->add_result();
+			$res->add_attribute("Id",$id);
+		}
+
+		$this->resp->run();
+	}
+
+	function AddLevelItemAdmin()
+	{
+		$levelId = (int)$_GET['levelId'];
+		$name = mysql_real_escape_string(urldecode($_GET['name']));
+		$x = (int)$_GET['x'];
+		$y = (int)$_GET['y'];
+		$itemType = (int)$_GET['itemType'];
+
+		$q = "SELECT * FROM LevelItems WHERE X='$x' AND Y='$y' AND levelId='$levelId';";
+		$hq = mysql_query($q);
+		if(mysql_num_rows($hq) == 0)
+		{
+			$aliaq = "INSERT INTO LevelItems (levelId,Name,X,Y,itemType) VALUES ('$levelId','$name','$x','$y','$itemType');";
+			$halia = mysql_query($aliaq) or die(error_log("Ascender API encountered an MySQL error: ".mysql_error()));
+		}
+
+		header('Content-type: text/json');
+     	print('[ { "Result": "OK" } ]'); 
+
+		$length = ob_get_length(); 
+		header("Content-Length: $length");
+	}
+
+	function UpdateLevelAdmin()
+	{
+     		header('Content-type: text/json');
+     		print('[ { "Result": "OK" }, {"Id": "1"} ]'); 
+
+			$length = ob_get_length(); 
+			header("Content-Length: $length");
+	}
+
+	function AddAccountSouls($souls)
+	{
+		$asq = "UPDATE accounts SET Souls=(Souls+$souls) WHERE SteamId='$this->steamid';";
+		mysql_query($asq) or die(error_log("Ascender API - AddAccountSouls() - MySQL Error Occured: ".mysql_error()));
+
+	}
+
+	function SubtractAccountSouls($souls)
+	{
+		$asq = "UPDATE accounts SET Souls=(Souls-$souls) WHERE SteamId='$this->steamid';";
+		mysql_query($asq) or die(error_log("Ascender API - SubtractAccountSouls() - MySQL Error Occured: ".mysql_error()));
+	}
+
+	function GetRecentMsgsXbox360()
+	{
+		//TODO: Implement some database functionality, and return appropriate results
+		//$res = $this->resp->add_result();
+		//$res->add_attribute("Error",1);
+		$this->resp->run();
+	}
+
+	function BuyItem1Xbox360()
+	{
+		$name = mysql_real_escape_string($_GET['name']);
+		$souls = (int)$_GET['souls'];
+		$offerId = (int)$_GET['offerId'];
+		$resIdx = (int)$_GET['resIdx'];
+
+		$cidq = "SELECT CharacterID FROM accounts WHERE SteamId='".$this->steamid."';" or die (error_log("Ascender API encountered a MySQL error: ".mysql_error()));
+		$hcid = mysql_query($cidq);
+
+		if(mysql_num_rows($hcid) > 0)
+		{
+			$cido = mysql_fetch_object($hcid);
+
+			$biq  = "INSERT INTO items (SteamId,CharacterId,ResIdx,Name) VALUES ('$this->steamid','$cido->CharacterID','$resIdx','$name');";
+			$hbi = mysql_query($biq) or die(error_log("Ascender API encountered a MySQL error: ".mysql_error()));
+
+			$item_id =  mysql_insert_id();
+
+			$res = $this->resp->add_result();
+			$res->add_attribute("Xuid",$this->steamid);
+			$res->add_attribute("Id",$item_id);
+			$res->add_attribute("Level",1);
+			$res->add_attribute("Keep",1);
+			$res->add_attribute("DurabilityLost",0);
+			$res->add_attribute("ResIdx",$resIdx);
+			$res->add_attribute("Name",$name);
+
+			$this->SubtractAccountSouls($souls);
+
+			$this->resp->run();
+		}
+		else
+			error_log("Ascender API BuyItem1Xbox360() - Could not find SteamID $this->steamid in Database!");
+	}
+
+	function BuyConsumablesXbox360()
+	{
+		$name = mysql_real_escape_string($_GET['name']);
+		$qty = (int)$_GET['qty'];
+		$type = (int)$_GET['type'];
+		$souls = (int)$_GET['souls'];
+
+		$bcq = "SELECT * FROM consumables WHERE SteamId='$this->steamid' AND Name='$name';";
+		$hbcq = mysql_query($bcq) or die(error_log("Ascencder API - BuyConsumablesXbox360() - MySQL error occured - Error: ".mysql_error()));
+
+		if(mysql_num_rows($hbcq) > 0)
+		{
+			$bcuq = "UPDATE consumables SET Count=($qty+Count) WHERE SteamId='$this->steamid' AND Name='$name';";
+			mysql_query($bcuq) or die(error_log("Ascender API - BuyConsumablesXbox360() - bcuq - MySQL error occured - Error: ".mysql_error()));
+
+		}else{
+			$bciq = "INSERT INTO consumables (SteamId,Name,Count,Type) VALUES ('$this->steamid','$name','$qty','$type');";
+			mysql_query($bciq) or die(error_log("Ascender API - BuyConsumablesXbox360() - bciq - MySQL error occured - Error: ".mysql_error()));
+		}
+
+		$this->SubtractAccountSouls($souls);
+
+		$this->resp->run();
+	}
+
+	function GetPlayerConsumables1Xbox360()
+	{
+		$pcq = "SELECT * FROM consumables WHERE SteamId='$this->steamid';";
+		$hpcq = mysql_query($pcq) or die(error_log("Ascender API - GetPlayerConsumables1Xbox360() - MySQL error occured - Error: ".mysql_error()));
+		
+		if(mysql_num_rows($hpcq) > 0)
+		{
+			while($row = mysql_fetch_object($hpcq))
+			{
+				$res = $this->resp->add_result();
+				$res->add_attribute("Id",$row->Id);
+				$res->add_attribute("Name",$row->Name);
+				$res->add_attribute("Type",$row->Type);
+				$res->add_attribute("Count",$row->Count);
+				$res->add_attribute("Keep",$row->Keep);
+			}
+		}
+
+		$this->resp->run();
+	}
 
 	function AddPlayerConsumableXbox360()
 	{
+		$name = mysql_real_escape_string($_GET['name']);
+		$type = (int)$_GET['type'];
+		$count = (int)$_GET['count'];
+
+		$acq = "INSERT INTO consumables (SteamId,Name,Count,Type) VALUES ('$this->steamid','$name','$count','$type');";
+		$hac = mysql_query($acq) or die(error_log("Ascender API - AddPlayerConsumableXbox360() - MySQL error occured - Error: ".mysql_error()));
+		
+		$consumable_id = mysql_insert_id();
+
 		$res = $this->resp->add_result();
-		$res->add_attribute("OK",1);
+
+		$res->add_attribute("Id",$consumable_id); // Unique random stored in the db.
+		$res->add_attribute("Name",$_GET['name']);
+		$res->add_attribute("Type",$_GET['type']);
+		$res->add_attribute("Count",$_GET['count']);
+		$res->add_attribute("Keep","1");
+
 		$this->resp->run();
 	}
 
-	function UpgradeItemXbox360()
+	function UpgradeAbility1Xbox360()
 	{
+		$id = (int)$_GET['id'];
+		$souls = (int)$_GET['souls'];
+		$upgrades = (int)$_GET['upgrades'];
 
-		/*
-			Response:
-				Level
-		*/
-		$res = $this->resp->add_result();
-		$res->add_attribute("Error",1);
+		$auq = "UPDATE abilities SET upgrades='$upgrades' WHERE Id='$id';";
+		mysql_query($auq) or die(error_log("Ascender API - UpgradeAbility1Xbox360() - MySQL Error Occured - ERROR: ".mysql_error()));
+
+		$this->SubtractAccountSouls($souls);
+
 		$this->resp->run();
 	}
-
+	
 	function AddPlayerAbilityXbox360()
 	{
-		/*
-			Request: /game/sproc?sproc=AddPlayerAbilityXbox360&xuid=123457&sessionId=22&name=Dark_Fireball
-			Potential response must contain: Id, Upgrades, Keep, Name 
-		*/
-		//This works for now, ID is most likely unique to the server side in some way.
-		$res = $this->resp->add_result(); 
-		$res->add_attribute("Id","99");
+		$name = mysql_real_escape_string($_GET['name']);
+
+		$aq = "INSERT INTO abilities (Steamid,Name) VALUES('$this->steamid','$name');";
+		$haq = mysql_query($aq) or die(error_log("Ascender API - AddPlayerAbilityXbox360() - MySQL Error Occured - ERROR: ".mysql_error()));
+		
+		$ability_id = mysql_insert_id();
+
+		$auq = "UPDATE characters SET AbilityIds=CONCAT(AbilityIds,',$ability_id') WHERE SteamId='$this->steamid';";
+		mysql_query($auq) or die(error_log("Ascender API - AddPlayerAbilityXbox360() - MySQL Error Occured - ERROR: ".mysql_error()));
+
+		$res = $this->resp->add_result();
+
+		$res->add_attribute("Id",$ability_id);
 		$res->add_attribute("Upgrades","0");
 		$res->add_attribute("Keep","1");
 		$res->add_attribute("Name",$_GET['name']);
+
 		$this->resp->run();
 
+	}
+
+	function GetPlayerAbilitiesByIdXbox360()
+	{
+		error_log("Ascender API - GetPlayerAbilitiesByIdXbox36() ".print_r($_GET,true));
+		$this->resp->run();
+	}
+
+	function GetPlayerAbilitiesXbox360() // Player Specific Requires XUID
+	{
+		$aq = "SELECT * FROM abilities WHERE SteamId='".$this->steamid."';";
+		$haq = mysql_query($aq) or die("Ascender API GetPlayerAbilitiesXbox360() - MySQL Error - Error: ".mysql_error());
+		if(mysql_num_rows($haq) > 0)
+		{
+			while($row = mysql_fetch_object($haq))
+			{
+				$res = $this->resp->add_result();
+				$res->add_attribute("Id",$row->Id);
+				$res->add_attribute("Upgrades",$row->Upgrades);
+				$res->add_attribute("Keep",$row->Keep);
+				$res->add_attribute("Name",$row->Name);
+			}
+		}
+
+		$this->resp->run();
 	}
 
 	function ReRollStoreXbox360()
 	{
+		$souls = (int)$_GET['souls'];
+		$lvl = (int)$_GET['lvl'];
+
+		$this->SubtractAccountSouls($souls);
+
+		$this->resp->run();
+	}
+
+	//TODO: Reduce souls properly.
+	function BuyCustomizerItemXbox360()
+	{
+		$souls = (int)$_GET['souls'];
+		$name = mysql_real_escape_string($_GET['name']);
+
+		$this->SubtractAccountSouls($souls);
+
 		$res = $this->resp->add_result();
 		$res->add_attribute("Error",1);
 		$this->resp->run();
 	}
 
-	function BuyCustomizerItemXbox360()
+	function RepairItemXbox360()
 	{
-		$res = $this->resp->add_result();
-		$res->add_attribute("Error",1);
+		$id = (int)$_GET['id'];
+		$souls = (int)$_GET['souls'];
+
+		$ri_q = "UPDATE items SET DurabilityLost='0' WHERE Id='$id';";
+		$hri = mysql_query($ri_q) or die(error_log("Ascender API encountered an MySQL error: ".mysql_error()));
+
+		$this->SubtractAccountSouls($souls);
+
 		$this->resp->run();
 	}
 
 	function UpdatePlayerItem3Xbox360()
 	{
-		/* The handler for this function is quite strange, we'll just try an JSON handler "OK" for now */
-		$res = $this->resp->add_result();
-		$res->add_attribute("Error",1);
+
+		$id = (int)$_GET['id'];
+		$durabilityLost = (int)$_GET['durabilityLost'];
+
+		$upi_q = "UPDATE items SET DurabilityLost='$durabilityLost' WHERE Id='$id';";
+		$hupi = mysql_query($upi_q) or die(error_log("Ascender API encountered an MySQL error: ".mysql_error()));
+
 		$this->resp->run();
 	}
 
 	function AddSouls3Xbox360()
 	{
+		$souls = (int)$_GET['souls'];
+
+		$this->AddAccountSouls($souls);
+
 		$res = $this->resp->add_result();
 		$res->add_attribute("Error",1);
 		$this->resp->run();
@@ -108,6 +396,7 @@ class Sproc {
 		$skinColor = mysql_real_escape_string($_GET['skinColor']);
 		$hairColor = mysql_real_escape_string($_GET['hairColor']);
 		$equipNames = mysql_real_escape_string($_GET['equipNames']);
+		$equipIds = mysql_real_escape_string($_GET['equipIds']);
 
 		$query = "INSERT INTO characters (SteamID,Alignment,Name,bodyParts,EquipmentIds,SkinColor,hairColor,Equipment) VALUES ('$this->steamid','$alignment','$name','$bodyparts','$equipResIds','$skinColor','$hairColor','$equipNames');";
 		$q = mysql_query($query) or die(error_log(" (insert) Ascender API encountered an MySQL error! Error: ".mysql_error(). " query: ".$query));
@@ -115,14 +404,33 @@ class Sproc {
 
 		$uq = mysql_query("UPDATE accounts SET CharacterID='$character_id' WHERE SteamId='$this->steamid'") or die(error_log("(update) Ascender API encountered a MySQL error! error: ".mysql_error()));
 
+		$equip_names = explode(",",$equipNames);
+		$equip_resids = explode(",",$equipResIds);
+
+		$equipment_ids = "";
+
+		$index = 0;
+		foreach($equip_names as $equipment_name)
+		{
+			$equipment_resid = mysql_real_escape_string($equip_resids[$index]);
+			$equipment_name = mysql_real_escape_string($equipment_name);
+			$eiq = mysql_query("INSERT INTO items (CharacterID,SteamId,ResIdx,Name,Keep,Level) VALUES ('$character_id','$this->steamid','$equipment_resid','$equipment_name','1','1');") or die(error_log("(insert equipment) Ascender API Encounterd a MySQL Error! - Error: ".mysql_error()));
+
+			$equipment_ids.="".mysql_insert_id().",";
+
+			$index++;
+		}
+
+		$uqc = mysql_query("UPDATE characters SET EquipmentIds='".$equipment_ids."' WHERE CharacterID='".$character_id."';") or die(error_log("(update equip ids) Ascender API Encountered a MySQL error - Error:".mysql_error()));
+
 
 		$res = $this->resp->add_result();
-		$res->add_attribute("Id",1);
+		$res->add_attribute("Id","$character_id");
 		$res->add_attribute("CreatorXuid",$_GET['xuid']);
 		$res->add_attribute("Alignment",$_GET['align']);
 		$res->add_attribute("Name",$_GET['name']);
 		$res->add_attribute("BodyParts",$_GET['bodyParts']);
-		$res->add_attribute("EquipmentIds",$_GET['equipResIds']);
+		$res->add_attribute("EquipmentIds",$equipment_ids);
 		$res->add_attribute("AbilityIds","0");
 		$res->add_attribute("MetaWarIds","0");
 		$res->add_attribute("SkinColor",$_GET['skinColor']);
@@ -134,13 +442,33 @@ class Sproc {
 
 	function UpdateCharacter5Xbox360()
 	{
+		$id = (int)$_GET['id'];
+		$align = (int)$_GET['align'];
+		$equipmentIds = mysql_real_escape_string($_GET['equipmentIds']);
+		$abilityIds = mysql_real_escape_string($_GET['abilityIds']);
+		$metaWarIds = mysql_real_escape_string($_GET['metaWarIds']);
+
+		$uc_q = "UPDATE characters SET Alignment='$align',EquipmentIds='$equipmentIds',AbilityIds='$abilityIds',MetaWarIds='$metaWarIds' WHERE CharacterID='$id';";
+		$huc = mysql_query($uc_q) or die(error_log("Ascender API UpdateCharacter5Xbox360() - MySQL Error - Error: ".mysql_error()));
+
 		$res = $this->resp->add_result();
 		$res->add_attribute("Error",1);
 		$this->resp->run();
 	}
 
+
 	function UpdateAccount8Xbox360()
 	{
+		$charXp = (int)$_GET['charXp'];
+		$warXp = (int)$_GET['warXp'];
+		$gameTime = (int)$_GET['gameTime'];
+		$levelId = (int)$_GET['levelId'];
+		$hideHelmet = (int)$_GET['hideHelmet'];
+
+
+		$uaq = "UPDATE accounts SET CharXp='$charXp',WarXp='$warXp',GameTime='$gameTime',HideHelmet='$hideHelmet' WHERE SteamId='$this->steamid';";
+		$hua = mysql_query($uaq) or die(error_log("Ascender API UpdateAccount8Xbox360() - MySQL Error - Error: ".mysql_error()));
+
 		$res = $this->resp->add_result();
 		$res->add_attribute("Error",1);
 		$this->resp->run();
@@ -162,22 +490,6 @@ class Sproc {
 
 	function GetStoreOffersXbox360()
 	{
-		$res = $this->resp->add_result(); 
-
-		/*
-			Response:
-			Id
-			Name
-			SoulScalar
-			Type
-		*/
-
-
-		// probably does nothing, but we're not returning any data and it doesn't like it if there's not a Result.
-		$res->add_attribute("Id","Starting_Armor_01_Gauntlets");
-		$res->add_attribute("SoulScalar",1);
-		$res->add_attribute("Type","HANDS");
-
 		$this->resp->run();
 	}
 
@@ -192,137 +504,64 @@ class Sproc {
 
 	function GetStoreItemsXbox360()
 	{
+		ob_start();
 
-		/* Response:
-			Name
-			Souls
-			Type
-		*/
-
-		//Add more results for more items in the list
-		/*
-				Types:
-					HEAD
-					BODY
-					HANDS
-					FEET
-					WEAPON
-		*/
-
-		$this->AddStoreItem("1H_Starting_Basic","1","WEAPON");
-		$this->AddStoreItem("2HS_Starting_Basic","1","WEAPON");
-		$this->AddStoreItem("2H_Starting_Basic","1","WEAPON");
-		$this->AddStoreItem("1H_starting_Uncommon","1","WEAPON");
-		$this->AddStoreItem("2HS_Starting_Uncommon","1","WEAPON");
-		$this->AddStoreITem("2H_Starting_Uncommon","1","WEAPON");
-		$this->AddStoreItem("1H_starting_Store","1","WEAPON");
-		$this->AddStoreItem("2HS_Starting_Store","1","WEAPON");
-		$this->AddStoreItem("2H_Starting_Store","1","WEAPON");
-		$this->AddStoreItem("Starting_Armor_01_Chest","1","BODY");
-		$this->AddStoreItem("Starting_Armor_01_Boots","1","FEET");
-		$this->AddStoreItem("Starting_Armor_01_Gauntlets","1","HANDS");
-		$this->AddStoreItem("Starting_Armor_01_Helmet","1","HEAD");
-		$this->AddStoreItem("Starting_Armor_02_Chest","1","BODY");
-		$this->AddStoreItem("Starting_Armor_02_Boots","1","FEET");
-		$this->AddStoreItem("Starting_Armor_02_Gauntlets","1","HANDS");
-		$this->AddStoreItem("Starting_Armor_02_Helmet","1","HEAD");
-		$this->AddStoreItem("Starting_Armor_03_Chest","1","BODY");
-		$this->AddStoreItem("Starting_Armor_03_Boots","1","FEET");
-		$this->AddStoreItem("Starting_Armor_03_Gauntlets","1","HANDS");
-		$this->AddStoreItem("Starting_Armor_03_Helmet","1","HEAD");
-		$this->AddStoreItem("Armor_Dark01_Helmet_lvl1","1","HEAD");
-		$this->AddStoreItem("Armor_Dark01_Chest_lvl1","1","BODY");
-		$this->AddStoreItem("Armor_Dark01_Gauntlets_lvl1","1","HANDS");
-		$this->AddStoreItem("demo_armor_boots_general_01","1","FEET");
-		$this->AddStoreItem("Armor_Helmet_Void01","1","HEAD");
-		$this->AddStoreItem("Armor_Void01","1","BODY");
-		$this->AddStoreItem("Armor_Gauntlets_Void01","1","HANDS");
-		$this->AddStoreItem("Armor_Boots_Void01","1","FEET");
-		$this->AddStoreItem("Armor_Chain02_Helmet","1","HEAD");
-		$this->AddStoreItem("Armor_Chain02_Chest","1","BODY");
-		$this->AddStoreItem("Armor_Chain02_Gauntlets","1","HANDS");
-		$this->AddStoreItem("Armor_Chain02_Boots","1","FEET");
-		$this->AddStoreItem("Armor_Chain03_Helmet","1","HEAD");
-		$this->AddStoreItem("Armor_Chain03_Chest","1","BODY");
-		$this->AddStoreItem("Armor_Chain03_Gauntlets","1","HANDS");
-		$this->AddStoreItem("Armor_Chain03_Boots","1","FEET");
-		$this->AddStoreItem("Armor_Helmet_Void02","1","HEAD");
-		$this->AddStoreItem("CaosPlateArmor","1","BODY");
-		$this->AddStoreItem("Armor_Rust_Gauntlets","1","HANDS");
-		$this->AddStoreItem("Armor_Rust_Boots","1","FEET");
-		$this->AddStoreItem("Armor_Leather04_Helmet","1","HEAD");
-		$this->AddStoreItem("Armor_Leather04_Chest","1","BODY");
-		$this->AddStoreItem("Armor_Leather04_Gauntlets","1","HANDS");
-		$this->AddStoreItem("Armor_Leather04_Boots","1","FEET");
+		header('Content-type: application/json');
+		$item_pop = new ItemPopJson(false);
+		$items = $item_pop->populate_store_items();
+		ob_start();
 
 
+		print json_encode($items);
 
-		$this->resp->run();
-		/*
-		//Some test item data, should probably pull this from a db or something in the future.
-		//TODO: Reverse Item names and types.
-		$res->add_attribute("Name","Head15");
-		$res->add_attribute("Souls",1);
-		$res->add_attribute("Type","HANDS");*/
+		$length = ob_get_length(); 
+		header("Content-Length: $length");
+		ob_end_flush();
 
+		exit;
 	}
 
-	function GetPlayerItems1Xbox360() // PlayerSpecific Requires XUID
+
+	function UpgradeItemXbox360()
 	{
+		$itemid = (int)$_GET['itemId'];
+		$souls = (int)$_GET['souls'];
+		$target_level = (int)$_GET['targetLevel'];
+		$isArmor = (int)$_GET['isArmor'];
 
-		/*
-			Response:
-			Id
-			Level
-			Xuid
-			Keep
-			DurabilityLost
-			ResIdx
-			Name
-			Rune0
-			Rune1
-			Rune2
+		$ui_q = "UPDATE items SET Level='$target_level' WHERE Id='$itemid';";
+		$hui = mysql_query($ui_q) or die("Ascender API error - MySQL error: ".mysql_error());
 
-		*/
+		$res = $this->resp->add_result();
+		$res->add_attribute("Level","$target_level");
+		$this->resp->run();
+	}
 
-		$query = "SELECT Equipment,EquipmentIds FROM characters WHERE SteamId='$this->steamid';";
-		$q = mysql_query($query) or die("Ascend API had an MySQL error (GetPlayerItems1Xbox360) error: ".mysql_error());
-
+	function GetPlayerItems1Xbox360() 
+	{
+		$query = "SELECT * FROM items WHERE SteamId='$this->steamid';";
+		$q  = mysql_query($query);
 		if(mysql_num_rows($q) > 0)
 		{
-
-			$row = mysql_fetch_object($q);
-
-			$equipments = explode(",",$row->Equipment);
-			$equipids = explode(",",$row->EquipmentIds);
-
-			$index = 0;
-			foreach($equipments as $equipment)
+			while($row = mysql_fetch_object($q))
 			{
-				if(strlen($equipment) > 0)
-				{	
-					$res = $this->resp->add_result();
-
-					$res->add_attribute("Id",mt_rand());
-					$res->add_attribute("Name",$equipment);
-					$res->add_attribute("Level","1");
-					$res->add_attribute("Xuid",$this->steamid);
-					$res->add_attribute("DruabilityLost","0");
-					$res->add_attribute("ResIdx",$equipids[$index]);
-
-				}
-				$index++;
+				$res = $this->resp->add_result();
+				$res->add_attribute("Id",$row->Id);
+				$res->add_attribute("Level",$row->Level);
+				$res->add_attribute("Xuid",$this->steamid);
+				$res->add_attribute("Keep",$row->Keep);
+				$res->add_attribute("DurabilityLost",$row->DurabilityLost);
+				$res->add_attribute("ResIdx",$row->ResIdx);
+				$res->add_attribute("Name",$row->Name);
+				$res->add_attribute("Rune0",$row->Rune0);
+				$res->add_attribute("Rune1",$row->Rune1);
+				$res->add_attribute("Rune2",$row->Rune2);
 			}
-
-
-
 		}
 
-		//TODO: Implement database functionality to actually store player items and return here!
-		//$res = $this->resp->add_result();
-		//$res->add_attribute("Error",1);
 		$this->resp->run();
 	}
+
 
 	function ResolveConsumableGiftTimersClient() // Player Specific Requires XUID
 	{
@@ -332,42 +571,19 @@ class Sproc {
 		$this->resp->run();
 	}
 
-	function GetPlayerConsumables1Xbox360() // Player Specific Requires XUID
-	{
-		//TODO: Implement some database functionality, and return appropriate results
-		//$res = $this->resp->add_result();
-		//$res->add_attribute("Error",1);
-		$this->resp->run();
-	}
 
 	function GetDepositBoxesXbox360() // Player Specific Requires XUID
 	{
 		//TODO: Implement some database functionality, and return appropriate results
+		//Relates to the ascension
 		//$res = $this->resp->add_result();
 		//$res->add_attribute("Error",1);
 		$this->resp->run();
 	}
 
-	function GetPlayerAbilitiesXbox360() // Player Specific Requires XUID
+	function GetCustomizerItemsXbox360()
 	{
-
-		/*
-			Response
-			Id
-			Upgrades
-			Keep
-			Name
-		*/
-		//TODO: Implement some database functionality, and return appropriate results
-		//$res = $this->resp->add_result();
-		//$res->add_attribute("Error",1);
-		$this->resp->run();
-	}
-
-	function GetCustomizerItemsXbox360() // Player Specific Requires XUID
-	{
-		//Head01,NoHair,NoBeard,CaosBody,CaosHands,CaosFeet,
-		$query = "SELECT bodyParts,Equipment FROM characters WHERE SteamId='$this->steamid';";
+		$query = "SELECT bodyParts FROM characters WHERE SteamId='$this->steamid';";
 		$q = mysql_query($query) or die("Ascend API had an MySQL error (GetCustomizerItemsXbox360) error: ".mysql_error());
 
 		if(mysql_num_rows($q) > 0)
@@ -387,17 +603,6 @@ class Sproc {
 				}
 			}
 
-			foreach($equipments as $equipment)
-			{
-				if(strlen($equipment) > 0)
-				{
-					$res = $this->resp->add_result();
-					$res->add_attribute("Name",$equipment);
-				}
-			}
-
-
-
 		}
 
 		$this->resp->run();
@@ -406,13 +611,6 @@ class Sproc {
 
 	function GetStoreCustomizerItemsXbox360()
 	{
-
-		/* Response:
-			Name
-			Souls
-			Type
-		*/
-
 		for($i = 0;$i<21;$i++)
 		{
 			$num_padded = sprintf("%02d", $i);
@@ -518,22 +716,52 @@ class Sproc {
 
 	function GetPlayerBossesForCreatorXbox360() // Possibly Player specific.
 	{
-		//TODO: Implement some database functionality, and return appropriate results
-		//$res = $this->resp->add_result();
-		//$res->add_attribute("Error",1);
 		$this->resp->run();
+	}
+
+
+	function AddContentionPoint($id,$LightCount,$DarkCount,$VoidCount,$Type,$LevelId,$Name,$pos)
+	{
+		$res = $this->resp->add_result();
+		$res->add_attribute("Id",$id);
+		$res->add_attribute("LightCount",$LightCount);
+		$res->add_attribute("DarkCount",$DarkCount);
+		$res->add_attribute("VoidCount",$VoidCount);
+		$res->add_attribute("Type",$Type);
+		$res->add_attribute("LevelId",$LevelId);
+		$res->add_attribute("Name",$Name);
+		$res->add_attribute("Position",$pos);
 	}
 
 	function GetContentionPoints2Xbox360() // Non-Player Specific Should be filled.
 	{
-		//TODO: Implement some database functionality, and return appropriate results
-		$res = $this->resp->add_result();
-		$res->add_attribute("Error",1);
-		$this->resp->run();
+
+		$content_q = "SELECT * FROM ContentionPoints;";
+		$hcontent = mysql_query($content_q);
+
+		if(mysql_num_rows($hcontent) > 0)
+		{	
+			while($row = mysql_fetch_object($hcontent))
+			{
+				$this->AddContentionPoint($row->Id,$row->LightCount,$row->DarkCount,$row->VoidCount,$row->Type,$row->LevelId,$row->Name,$row->Position);
+			}
+
+			$this->resp->run();
+		}
+
 	}
 
 	function GetContentionPointTitlesXbox360() // Player specific sends XUID
 	{
+		/* 
+			Response:
+				PointId
+				Xuid
+				Alignment
+				CapXuid
+				CapBossId
+		*/
+
 		//TODO: Implement some database functionality, and return appropriate results
 		//$res = $this->resp->add_result();
 		//$res->add_attribute("Error",1);
@@ -542,51 +770,60 @@ class Sproc {
 
 	function GetRegionsXbox360()
 	{
-		//TODO: Reverse where the data gets stored in this response to determine if this is accurate.
 		$res_region1 = $this->resp->add_result();
-		$res_region1->add_attribute("Id",0);
-		$res_region1->add_attribute("Name","REGION_DEMO");
+		$res_region1->add_attribute("Id","1");
+		$res_region1->add_attribute("Name","RegionName_World_01");
 		
 		$res_region2 = $this->resp->add_result();
-		$res_region2->add_attribute("Id",1);
-		$res_region2->add_attribute("Name","REGION_HUB");
+		$res_region2->add_attribute("Id","2");
+		$res_region2->add_attribute("Name","RegionName_World_02");
 		
-		$res_region3 = $this->resp->add_result();
-		$res_region3->add_attribute("Id",2);
-		$res_region3->add_attribute("Name","REGION_NONE");
+		$this->resp->run();
+	}
 
-		$res_region4 = $this->resp->add_result();
-		$res_region4->add_attribute("Id",3);
-		$res_region4->add_attribute("Name","REGION_SWAMPLANDS");
+	function AddLevelAdmin()
+	{
+		$regionId = (int)$_GET['regionId'];
+		$name = mysql_real_escape_string($_GET['name']);
+		$groupName = mysql_real_escape_string($_GET['groupName']);
+		$seed = mt_rand();
+		
+		$lq = "SELECT * FROM Levels WHERE RegionId='$regionId' AND name='$name';";
+		$hlq = mysql_query($lq);
 
-		$res_region5 = $this->resp->add_result();
-		$res_region5->add_attribute("Id",4);
-		$res_region5->add_attribute("Name","REGION_BADLANDS");
-
-		$res_region6 = $this->resp->add_result();
-		$res_region6->add_attribute("Id",5);
-		$res_region6->add_attribute("Name","REGION_HIGHLANDS");
+		if(mysql_num_rows($hlq) == 0)
+		{
+			$ala_q = "INSERT INTO Levels (RegionId,Name,groupName,Seed) VALUES('$regionId','$name','$groupName','$seed');";
+			$hala = mysql_query($ala_q) or die(error_log("Ascender API encountered a MySQL error: ".mysql_error()));
+			$id = mysql_insert_id();			
+		}
 
 		$this->resp->run();
+
 	}
 
 	function GetLevelsXbox360()
 	{
-		//TODO: Implement some database functionality, and return appropriate results
-		
-		$res = $this->resp->add_result();
-		$res->add_attribute("Id",0);
-		$res->add_attribute("RegionId",1);
-		$res->add_attribute("Seed",1);
-		$res->add_attribute("Name","bl_01_dune_foothills");
+
+		$lq = "SELECT * FROM Levels;";
+		$hlq = mysql_query($lq);
+
+		while($row = mysql_fetch_object($hlq))
+		{
+			$res = $this->resp->add_result();
+			$res->add_attribute("Id",$row->Id);
+			$res->add_attribute("RegionId",$row->RegionId);
+			$res->add_attribute("Seed",$row->Seed);
+			$res->add_attribute("Name",$row->Name);
+		}
 
 		$this->resp->run();
 	}
 
+
+	//This is for leaderboard data, we'll deal with it when leaderboards are fixed in some way.
 	function GetRemoteAccountsXbox360()
 	{
-		//TODO: Implement some database functionality, and return appropriate results
-
 		$res = $this->resp->add_result();
 		$res->add_attribute("XUID",$this->xuid);
 		$res->add_attribute("SteamId",$this->xuid);
@@ -647,59 +884,53 @@ class Sproc {
 
 	function GetPlayerItemsByIdXbox360()
 	{
-		//TODO: Implement some database functionality, and return appropriate results
-		//$res = $this->resp->add_result();
-		//$res->add_attribute("Error",1);
 		$this->resp->run();
 	}
 
-	function GetPlayerAbilitiesByIdXbox360()
-	{
-		//TODO: Implement some database functionality, and return appropriate results
-		//$res = $this->resp->add_result();
-		//$res->add_attribute("Error",1);
-		$this->resp->run();
-	}
 
 	function GetPlayerBossesAbilitiesXbox360()
 	{
-		//TODO: Implement some database functionality, and return appropriate results
-		//$res = $this->resp->add_result();
-		//$res->add_attribute("Error",1);
 		$this->resp->run();
 	}
 
 	function GetPlayerBossesItemsXbox360()
 	{
-		//TODO: Implement some database functionality, and return appropriate results
-		//$res = $this->resp->add_result();
-		//$res->add_attribute("Error",1);
 		$this->resp->run();
 	}
 
 	function GetWarStatsXbox360()
-	{
-		//TODO: Implement some database functionality, and return appropriate results		
-		/*$res = $this->resp->add_result();
+	{		
+		//TODO: Start looking into WarXP tracking, may need ascension working before this works.
+		$WarXpLightQuery = "SELECT SUM(WarXpLight) FROM accounts;";
+		$WarXpDarkQuery = "SELECT SUM(WarpXpDark) FROM accounts;";
+		$WarXpVoidQuery = "SELECT SUM(WarXpVoid) FROM accounts;";
+
+
+		$CharactersLightQuery = "SELECT count(Alignment) FROM characters WHERE Alignment=1;"; 
+		$CharactersLightHandle = mysql_query($CharactersLightQuery) or die(error_log("Ascender API GetWarStatsXbox360() - CharactersLightQuery - encountered a MySQL error: ".mysql_error()));
+		$CharactersLightCount = mysql_num_rows($CharactersLightHandle);
+
+		$CharactersVoidQuery = "SELECT count(Alignment) FROM characters WHERE Alignment=2;";
+		$CharactersVoidHandle = mysql_query($CharactersVoidQuery) or die(error_log("Ascender API GetWarStatsXbox360() - CharactersVoidQuery - encountered a MySQL error:".mysql_error()));
+		$CharactersVoidCount = mysql_num_rows($CharactersVoidHandle);
+
+		$CharactersDarkQuery = "SELECT count(Alignment) FROM characters WHERE Alignment=3;";
+		$CharactersDarkHandle = mysql_query($CharactersDarkQuery) or die(error_log("Ascender API GetWarStatsXbox360() - CharactersDarkQuery - encountered a MySQL error:".mysql_error()));
+		$CharactersDarkCount = mysql_num_rows($CharactersDarkHandle);
+
+		$res = $this->resp->add_result();
 		$res->add_attribute("WarXpLight",0);
 		$res->add_attribute("WarXpDark",0);
-		$res->add_attribute("CharCountLight",0);
-		$res->add_attribute("CharCountDark",0);
-		$res->add_attribute("CharCountVoid",0);
+		$res->add_attribute("WarXpVoid",0);
+		$res->add_attribute("CharCountLight",$CharactersLightCount);
+		$res->add_attribute("CharCountDark",$CharactersDarkCount);
+		$res->add_attribute("CharCountVoid",$CharactersVoidCount);
 		$res->add_attribute("BossCountLight",0);
 		$res->add_attribute("BossCountDark",0);
 		$res->add_attribute("BossCountVoid",0);
 		$res->add_attribute("ChallengeWinsLight",0);
 		$res->add_attribute("ChallengeWinsDark",0);
-		$res->add_attribute("ChallengeWinsVoid",0);*/
-		$this->resp->run();
-	}
-
-	function GetRecentMsgsXbox360()
-	{
-		//TODO: Implement some database functionality, and return appropriate results
-		//$res = $this->resp->add_result();
-		//$res->add_attribute("Error",1);
+		$res->add_attribute("ChallengeWinsVoid",0);
 		$this->resp->run();
 	}
 

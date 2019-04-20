@@ -115,7 +115,7 @@ class Sequence {
 				$res->add_attribute("HairColor",$crow->hairColor);
 
 			}
-
+			
 			$this->resp->run();
 	}
 

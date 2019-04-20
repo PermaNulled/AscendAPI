@@ -37,10 +37,12 @@ class Response{
 				$res->addAttribute($attribute[0],$attribute[1]);
 			}
 		}
+		
+		ob_start();
 		print($this->xml->asXML());
 		$length = ob_get_length(); 
 		header("Content-Length: $length");
-
+		ob_end_flush();
 
 		exit;
 	}
