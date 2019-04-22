@@ -13,31 +13,69 @@ class Sproc {
 
 
 	//TODO: Implement...
-	//AddSouls3Xbox360
-	//UpdatePlayerItem3Xbox360
-	//BuyCustomizerItemXbox360
-	//ReRollStoreXbox360
-	//EnterPurgatoryXbox360
-	//ReRollStoreXbox360
-	//UpdatePlayerItem3Xbox360
-	//GetActiveWarChallengeXbox360
-	//GetWarRewardsXbox360
-	//GetStoreOffersXbox360
+	//GetActiveWarChallengeXbox360 - not fully implemented
+	// /game/sproc?sproc=GetActiveWarChallengeXbox360
+
+	//GetWarRewardsXbox360 - not fully implemented
+	// /game/sproc?sproc=GetWarRewardsXbox360&user=76561198009394515
+
+	//GetStoreOffersXbox360 - not fully implemented
+	// /game/sproc?sproc=GetStoreOffersXbox360
+
+	//GetWarStatsXbox360 - not fully implemented
+	// /game/sproc?sproc=GetWarStatsXbox360
+
+	//GetPlayerBossesTopXbox360 - not fully implemented
+	// /game/sproc?sproc=GetPlayerBossesTopXbox360&lightXuid=76561198168415956&darkXuid=76561198085826254&voidXuid=76561198085826254
+
 	//GetRecentMsgsXbox360
-	//GetWarStatsXbox360
-	//GetPlayerBossesTopXbox360
-	//70.187.170.131 - - [26/Nov/2018:03:32:27 -0800] "GET /game/sequence?sequence=SlotRuneXbox360&xuid=76561198009394515&sessionId=473740457&runeId=19&itemId=8&slotIdx=0 HTTP/1.1" 200 15 "-" "Ascend"
-	//70.187.170.131 - - [26/Nov/2018:03:31:53 -0800] "GET /game/sproc?sproc=GetRecentMsgsXbox360&target=76561198009394515 HTTP/1.1" 200 46 "-" "Ascend"
-	//70.187.170.131 - - [26/Nov/2018:03:30:34 -0800] "GET /game/sproc?sproc=CapContentionPointXbox360&xuid=76561198009394515&sessionId=473740457&pointId=2&alignment=3 HTTP/1.1" 200 51 "-" "Ascend"
-	//70.187.170.131 - - [01/Dec/2018:03:52:19 -0800] "GET /game/sproc?sproc=GetTotemByLevelAndSeedXbox360&targetXuid=76561198009394515&levelId=6&levelSeed=458952197 HTTP/1.1" 200 55 "-" "Ascend"
-	//70.187.170.131 - - [01/Dec/2018:03:52:19 -0800] "GET /game/sproc?sproc=GetLevelItems1Xbox360&xuid=76561198009394515&levelId=6 HTTP/1.1" 200 47 "-" "Ascend"
-	//70.187.170.131 - - [01/Dec/2018:03:52:20 -0800] "GET /game/sproc?sproc=GetDynamicLevelItems2Xbox360&xuid=76561198009394515&levelId=6&levelSeed=458952197 HTTP/1.1" 200 54 "-" "Ascend"
-	//70.187.170.131 - - [02/Dec/2018:01:23:21 -0800] "GET /game/sproc?sproc=AddLevelItemAdmin&levelId=41&name=%2D4816%2D12268&x=41&y=553&itemType=0 HTTP/1.1" 200 22 "-" "Ascend"
-	//GetDynamicLevelItems2Xbox360
+
+	//GET /game/sproc?sproc=GetRecentMsgsXbox360&target=76561198009394515
+
+	//AddSouls3Xbox360
+	// /game/sproc?sproc=AddSouls3Xbox360&xuid=76561198009394515&sessionId=1568412571&souls=5000&soulUpdateId=2 
+
+	//EnterPurgatoryXbox360
+	
+	//GET /game/sproc?sproc=EnterPurgatoryXbox360&xuid=76561198046797610&sessionId=1951473221
+
+	//ClaimTutorialBossXbox360
+	//GET /game/sproc?sproc=ClaimTutorialBossXbox360&xuid=76561198046797610&level=11&align=2 HTTP/1.1", upstream: "fastcgi://unix:/run/php/php5.6-fpm.sock:", host: "new.thedefaced.org:80"
+
+	//AddLootSouls2Xbox360
+
+	//CapContentionPointXbox360
+	//GET /game/sproc?sproc=CapContentionPointXbox360&xuid=76561198080432945&sessionId=1046777535&pointId=2&alignment=2 
+	//GET /game/sproc?sproc=CapContentionPointXbox360&xuid=76561198009394515&sessionId=473740457&pointId=2&alignment=3
+
+	//AddDynamicLootItem1Xbox360
+	//GET /game/sproc?sproc=AddDynamicLootItem1Xbox360&xuid=76561198046797610&sessionId=1951473221&chestId=33&name=Void_Store_L15_S_Med&resIdx=135 HTTP/1.1", upstream: "fastcgi://unix:/run/php/
+	//AddDynamicLootItem1Xbox360&xuid=76561198009394515&sessionId=410562881&chestId=72&name=Armor_Component_179&resIdx=263
+
+	//AddDynamicLootSouls2Xbox360
+	///game/sproc?sproc=AddDynamicLootSouls2Xbox360&xuid=76561198080432945&sessionId=1046777535&souls=51&id=55 
+	//AddDynamicLootSouls2Xbox360&xuid=76561198009394515&sessionId=410562881&souls=147&id=54
+
+	//GetTotemByLevelXbox360
+	//GET /game/sproc?sproc=GetTotemByLevelXbox360&targetXuid=76561198046797610&levelId=74 HTTP/1.1", upstream: "fastcgi://unix:/run/php/php5.6-fpm.sock:", host: "new.thedefaced.org:80"
+
 	//GetTotemByLevelAndSeedXbox360
-	//Log:Database >> Sending query: AddDynamicLootSouls2Xbox360&xuid=76561198009394515&sessionId=410562881&souls=147&id=54
-	//!WARNING! >> Couldn't find loot drop for id 'Uncommon'
-	//Log:Database >> Sending query: AddDynamicLootItem1Xbox360&xuid=76561198009394515&sessionId=410562881&chestId=72&name=Armor_Component_179&resIdx=263
+	//GET /game/sproc?sproc=GetTotemByLevelAndSeedXbox360&targetXuid=76561198058111756&levelId=33&levelSeed=2082596091
+	//GET /game/sproc?sproc=GetTotemByLevelAndSeedXbox360&targetXuid=76561198009394515&levelId=6&levelSeed=458952197
+	
+	//AddLootConsumableXbox360
+	//GET /game/sproc?sproc=AddLootConsumableXbox360&xuid=76561198046797610&sessionId=413852839&chestId=19&name=Storm_Vial&type=3&count=1 
+
+	//SellConsumableXbox360
+	//GET /game/sproc?sproc=SellConsumableXbox360&xuid=76561198046797610&sessionId=956665258&id=146&souls=50
+
+	//SellItemXbox360
+	//GET /game/sproc?sproc=SellItemXbox360&xuid=76561198046797610&sessionId=956665258&id=522&souls=21&charEquipmentIds=527%2C0%2C0%2C526%2C528%2C525%2C524
+
+	//AddLootItem1Xbox360
+	//GET /game/sproc?sproc=AddLootItem1Xbox360&xuid=76561198046797610&sessionId=1359719260&chestId=26&name=Armor_leathermail_var_02&resIdx=203
+
+
 
 	//TODO: Port to use PDO instead of standard MySQL bullshit that's been deprecated.
 	//TODO: Make generic error function for logging.
@@ -61,7 +99,7 @@ class Sproc {
      	}
 
 	}
-
+	
 	function GetLevelItems1Xbox360()
 	{
 		$levelId = (int)$_GET['levelId'];

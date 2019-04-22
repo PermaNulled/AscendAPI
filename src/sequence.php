@@ -119,6 +119,38 @@ class Sequence {
 			$this->resp->run();
 	}
 
+	//SlotRuneXbox360
+	//GET /game/sequence?sequence=SlotRuneXbox360&xuid=76561198009394515&sessionId=473740457&runeId=19&itemId=8&slotIdx=0
+	//GET /game/sequence?sequence=SlotRuneXbox360&xuid=76561198046797610&sessionId=1304896597&runeId=148&itemId=529&slotIdx=2
+
+	function SlotRuneXbox360()
+	{
+		$runeId = (int)$_GET['runeId'];
+		$itemId = (int)$_GET['itemId'];
+		$slot = (int)$_GET['slotIdx'];
+
+		$qc = "SELECT * FROM consumables WHERE Id='$runeId' AND SteamId='$this->steamid';";
+		$q = mysql_query($qc) or die(error_log("Ascender API MysQL error: ".mysql_error()));
+
+		if(mysql_num_rows($q) > 0)
+		{
+			$rune_obj = mysql_fetch_object($q);
+
+			$dc = "DELETE FROM consumables WHERE Id='$runeId';";
+			$qdc = mysql_query($dc) or die(error_log("Ascender API MySQL error: ".mysql_error()));
+
+			$rune_slot_str = "Rune".$slot;
+
+			$er = "UPDATE items SET $rune_slot_str='$rune_obj->Name' WHERE Id='$itemId'";
+			$qer = mysql_query($er) or die(error_log("Ascender API MySQL error: ".mysql_error()));
+
+			$res = $this->resp->add_result();
+			$res->add_attribute("OK","1");
+		}
+
+		$this->resp->run();
+	}
+
 	function AddPendingSoulsAndXpXbox360()
 	{
 		//TODO: Implement some database functionality, and return appropriate results
