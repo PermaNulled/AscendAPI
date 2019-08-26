@@ -29,53 +29,23 @@ class Sproc {
 	// /game/sproc?sproc=GetPlayerBossesTopXbox360&lightXuid=76561198168415956&darkXuid=76561198085826254&voidXuid=76561198085826254
 
 	//GetRecentMsgsXbox360
-
 	//GET /game/sproc?sproc=GetRecentMsgsXbox360&target=76561198009394515
 
-	//AddSouls3Xbox360
-	// /game/sproc?sproc=AddSouls3Xbox360&xuid=76561198009394515&sessionId=1568412571&souls=5000&soulUpdateId=2 
-
-	//EnterPurgatoryXbox360
-	
-	//GET /game/sproc?sproc=EnterPurgatoryXbox360&xuid=76561198046797610&sessionId=1951473221
 
 	//ClaimTutorialBossXbox360
 	//GET /game/sproc?sproc=ClaimTutorialBossXbox360&xuid=76561198046797610&level=11&align=2 HTTP/1.1", upstream: "fastcgi://unix:/run/php/php5.6-fpm.sock:", host: "new.thedefaced.org:80"
-
-	//AddLootSouls2Xbox360
 
 	//CapContentionPointXbox360
 	//GET /game/sproc?sproc=CapContentionPointXbox360&xuid=76561198080432945&sessionId=1046777535&pointId=2&alignment=2 
 	//GET /game/sproc?sproc=CapContentionPointXbox360&xuid=76561198009394515&sessionId=473740457&pointId=2&alignment=3
 
-	//AddDynamicLootItem1Xbox360
-	//GET /game/sproc?sproc=AddDynamicLootItem1Xbox360&xuid=76561198046797610&sessionId=1951473221&chestId=33&name=Void_Store_L15_S_Med&resIdx=135 HTTP/1.1", upstream: "fastcgi://unix:/run/php/
-	//AddDynamicLootItem1Xbox360&xuid=76561198009394515&sessionId=410562881&chestId=72&name=Armor_Component_179&resIdx=263
-
-	//AddDynamicLootSouls2Xbox360
-	///game/sproc?sproc=AddDynamicLootSouls2Xbox360&xuid=76561198080432945&sessionId=1046777535&souls=51&id=55 
-	//AddDynamicLootSouls2Xbox360&xuid=76561198009394515&sessionId=410562881&souls=147&id=54
-
-	//GetTotemByLevelXbox360
+	//GetTotemByLevelXbox360 - PRIORITY
 	//GET /game/sproc?sproc=GetTotemByLevelXbox360&targetXuid=76561198046797610&levelId=74 HTTP/1.1", upstream: "fastcgi://unix:/run/php/php5.6-fpm.sock:", host: "new.thedefaced.org:80"
 
 	//GetTotemByLevelAndSeedXbox360
 	//GET /game/sproc?sproc=GetTotemByLevelAndSeedXbox360&targetXuid=76561198058111756&levelId=33&levelSeed=2082596091
 	//GET /game/sproc?sproc=GetTotemByLevelAndSeedXbox360&targetXuid=76561198009394515&levelId=6&levelSeed=458952197
 	
-	//AddLootConsumableXbox360
-	//GET /game/sproc?sproc=AddLootConsumableXbox360&xuid=76561198046797610&sessionId=413852839&chestId=19&name=Storm_Vial&type=3&count=1 
-
-	//SellConsumableXbox360
-	//GET /game/sproc?sproc=SellConsumableXbox360&xuid=76561198046797610&sessionId=956665258&id=146&souls=50
-
-	//SellItemXbox360
-	//GET /game/sproc?sproc=SellItemXbox360&xuid=76561198046797610&sessionId=956665258&id=522&souls=21&charEquipmentIds=527%2C0%2C0%2C526%2C528%2C525%2C524
-
-	//AddLootItem1Xbox360
-	//GET /game/sproc?sproc=AddLootItem1Xbox360&xuid=76561198046797610&sessionId=1359719260&chestId=26&name=Armor_leathermail_var_02&resIdx=203
-
-
 
 	//TODO: Port to use PDO instead of standard MySQL bullshit that's been deprecated.
 	//TODO: Make generic error function for logging.
@@ -99,7 +69,203 @@ class Sproc {
      	}
 
 	}
+
+
+	//EnterPurgatoryXbox360
+	//GET /game/sproc?sproc=EnterPurgatoryXbox360&xuid=76561198046797610&sessionId=1951473221
+	function EnterPurgatoryXbox360()
+	{
+		//Generic response, could not find any handling code for this.
+		$res = $this->resp->add_result();
+		$res->add_attribute("Error",1);
+		$this->resp->run();
+	}
+
+	//AddDynamicLootItem1Xbox360
+	//GET /game/sproc?sproc=AddDynamicLootItem1Xbox360&xuid=76561198046797610&sessionId=1951473221&chestId=33&name=Void_Store_L15_S_Med&resIdx=135 HTTP/1.1", upstream: "fastcgi://unix:/run/php/
+	//AddDynamicLootItem1Xbox360&xuid=76561198009394515&sessionId=410562881&chestId=72&name=Armor_Component_179&resIdx=263
+	function AddDynamicLootItem1Xbox360()
+	{
+		$steamID = $this->steamid;
+		$sessionId = (int)$_GET['sessionId'];
+		$chestId = (int)$_GET['chestId'];
+		$name = mysql_real_escape_string(urldecode($_GET['name']));
+		$resIdx = (int)$_GET['resIdx'];
+
+		$cidq = "SELECT CharacterID FROM accounts WHERE SteamId='".$steamID."';" or die (error_log("Ascender API encountered a MySQL error: ".mysql_error()));
+		$hcid = mysql_query($cidq);
+
+		if(mysql_num_rows($hcid) > 0)
+		{
+			$cido = mysql_fetch_object($hcid);
+
+			$iiq = "INSERT INTO items (SteamId,CharacterId,ResIdx,Name) VALUES ($steamID,$cido->CharacterID,$resIdx,'$name')";
+			$iir = mysql_query($iiq) or die(error_log("Ascender API MySQL error: ".mysql_error()));
+			$id = mysql_insert_id();
+		}
+
+		$res = $this->resp->add_result();
+		$res->add_attribute("Xuid",$this->steamid);
+		$res->add_attribute("Id",$id);
+		$res->add_attribute("Level",1);
+		$res->add_attribute("Keep",1);
+		$res->add_attribute("DurabilityLost",0);
+		$res->add_attribute("ResIdx",$resIdx);
+		$res->add_attribute("Name",$name);
+		$res->add_attribute("Rune0",0);
+		$res->add_attribute("Rune1",0);
+		$res->add_attribute("Rune2",0);
+		$this->resp->run();
+	}
+
+	//AddDynamicLootSouls2Xbox360
+	///game/sproc?sproc=AddDynamicLootSouls2Xbox360&xuid=76561198080432945&sessionId=1046777535&souls=51&id=55 
+	//AddDynamicLootSouls2Xbox360&xuid=76561198009394515&sessionId=410562881&souls=147&id=54
+	function AddDynamicLootSouls2Xbox360()
+	{
+		$steamID = $this->steamid;
+		$sessionId = (int)$_GET['sessionId'];
+		$souls = (int)$_GET['souls'];
+
+		//Not sure how id is used in the context of this... will implement later.
+		$id = (int)$_GET['id'];
+
+		$this->AddAccountSouls($souls);
+
+		$res = $this->resp->add_result();
+		$res->add_attribute("Error",1);
+		$this->resp->run();
+	}
+
 	
+	//AddLootSouls2Xbox360
+	// /game/sproc?sproc=AddLootSouls2Xbox360&xuid=76561198009394515&sessionId=410562881&souls=154&id=23
+	// /game/sproc?sproc=AddLootSouls2Xbox360&xuid=76561198009394515&sessionId=410562881&souls=104&id=27
+	function AddLootSouls2Xbox360()
+	{
+		$steamID = $this->steamid;
+		$sessionId = (int)$_GET['sessionId'];
+		$souls = (int)$_GET['souls'];
+
+		//Not sure how id is used in the context of this... will implement later.
+		$id = (int)$_GET['id'];
+
+		$this->AddAccountSouls($souls);
+
+		$res = $this->resp->add_result();
+		$res->add_attribute("Error",1);
+		$this->resp->run();
+	}
+	//SellConsumableXbox360
+	//GET /game/sproc?sproc=SellConsumableXbox360&xuid=76561198046797610&sessionId=956665258&id=146&souls=50
+	function SellConsumableXbox360()
+	{
+		$steamID = $this->steamid;
+		$sessionId = (int)$_GET['sessionId'];
+		$id = (int)$_GET['id'];
+		$souls = (int)$_GET['souls'];
+
+		$rcq = "DELETE FROM consumables WHERE SteamId='$steamID AND Id='$id';";
+		$rcr = mysql_query($rcq) or die(error_log("Ascender API MySQL error: ".mysql_error()));
+
+		if($rcr)
+		{
+			$this->AddAccountSouls($souls);
+		}
+
+		$res = $this->resp->add_result();
+		$res->add_attribute("Error",1);
+		$this->resp->run();
+	}
+
+	//SellItemXbox360
+	//GET /game/sproc?sproc=SellItemXbox360&xuid=76561198046797610&sessionId=956665258&id=522&souls=21&charEquipmentIds=527%2C0%2C0%2C526%2C528%2C525%2C524
+	function SellItemXbox360()
+	{
+		$steamID = $this->steamid;
+		$sessionId = (int)$_GET['sessionId'];
+		$id = (int)$_GET['id'];
+		$souls = (int)$_GET['souls'];
+
+		//Assuming this is provided to prevent selling of equipped items
+		//TODO: Implement with this.
+		$charEquipmentIds = mysql_real_escape_string(urldecode($_GET['charEquipmentIds']));
+
+		$riq = "DELETE FROM items WHERE SteamId='$steamID' AND Id='$id';";
+		$rir = mysql_query($riq) or die(error_log("Ascender API MySQL error: ".mysql_error()));
+
+		if($rir)
+		{
+			$this->AddAccountSouls($souls);
+		}
+
+		$res = $this->resp->add_result();
+		$res->add_attribute("Error",1);
+		$this->resp->run();
+	}
+
+	//AddLootItem1Xbox360
+	//GET /game/sproc?sproc=AddLootItem1Xbox360&xuid=76561198046797610&sessionId=1359719260&chestId=26&name=Armor_leathermail_var_02&resIdx=203
+	// /game/sproc?sproc=AddLootItem1Xbox360&xuid=76561198046797610&sessionId=1476977440&chestId=26&name=Skull_Blade_of_Ice&resIdx=71
+	// NEXT CALL: /game/sproc?sproc=UpdateAccount8Xbox360&xuid=76561198046797610&sessionId=1476977440&charXp=121005&warXp=0&gameTime=33173&levelId=&hideHelmet=0
+	//TODO: Find a way to get the currently logged in character under the session.
+	function AddLootItem1Xbox360()
+	{
+		$steamID = $this->steamid;
+		$sessionId = (int)$_GET['sessionId'];
+		$chestId = (int)$_GET['chestId'];
+		$name = mysql_real_escape_string(urldecode($_GET['name']));
+		$resIdx = (int)$_GET['resIdx'];
+
+		$cidq = "SELECT CharacterID FROM accounts WHERE SteamId='".$steamID."';" or die (error_log("Ascender API encountered a MySQL error: ".mysql_error()));
+		$hcid = mysql_query($cidq);
+
+		if(mysql_num_rows($hcid) > 0)
+		{
+			$cido = mysql_fetch_object($hcid);
+
+			$iiq = "INSERT INTO items (SteamId,CharacterId,ResIdx,Name) VALUES ($steamID,$cido->CharacterID,$resIdx,'$name')";
+			$iir = mysql_query($iiq) or die(error_log("Ascender API MySQL error: ".mysql_error()));
+			$id = mysql_insert_id();
+		}
+
+		$res = $this->resp->add_result();
+		$res->add_attribute("Xuid",$this->steamid);
+		$res->add_attribute("Id",$id);
+		$res->add_attribute("Level",1);
+		$res->add_attribute("Keep",1);
+		$res->add_attribute("DurabilityLost",0);
+		$res->add_attribute("ResIdx",$resIdx);
+		$res->add_attribute("Name",$name);
+		$res->add_attribute("Rune0",0);
+		$res->add_attribute("Rune1",0);
+		$res->add_attribute("Rune2",0);
+		$this->resp->run();
+	}
+
+	//AddLootConsumableXbox360
+	//GET /game/sproc?sproc=AddLootConsumableXbox360&xuid=76561198046797610&sessionId=413852839&chestId=19&name=Storm_Vial&type=3&count=1 
+	//Looking at the binary there doesn't seem to be a response to this.
+	function AddLootConsumableXbox360()
+	{
+		$steamID = $this->steamid;
+		$sessionId = (int)$_GET['sessionId'];
+		$chestId = (int)$_GET['chestId'];
+		$name = mysql_real_escape_string(urldecode($_GET['name']));
+		$type = (int)$_GET['type'];
+		$count = (int)$_GET['count'];
+
+		$icq = "INSERT INTO consumables (SteamId,Name,Count,Keep,Type) VALUES ($steamID,'$name',$type,$count)";
+		$icr = mysql_query($icq) or die(error_log("Ascender API MySQL error: ".mysql_error()));
+
+
+		$res = $this->resp->add_result();
+		$res->add_attribute("Error",1);
+		$this->resp->run();
+	}
+
+
+
 	function GetLevelItems1Xbox360()
 	{
 		$levelId = (int)$_GET['levelId'];
@@ -245,6 +411,7 @@ class Sproc {
 		$offerId = (int)$_GET['offerId'];
 		$resIdx = (int)$_GET['resIdx'];
 
+		//TODO: Find currently logged in character, ascending will probably break this code.
 		$cidq = "SELECT CharacterID FROM accounts WHERE SteamId='".$this->steamid."';" or die (error_log("Ascender API encountered a MySQL error: ".mysql_error()));
 		$hcid = mysql_query($cidq);
 
