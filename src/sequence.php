@@ -98,7 +98,8 @@ class Sequence {
 			$res->add_attribute("SessionId",mt_rand());
 			$res->add_attribute("Banned",$row->Banned);
 
-			if($row->CharacterID != 0)
+			error_log("Ascender API SignInInfo( XUID: $this->steamid, CharacterID: $row->CharacterID, AscState: $row->AscState, CharXp: $row->CharXp, CharXpAtAsc: $row->CharXpAtAsc)");
+			if($row->CharacterID != 0 && $row->CharacterID != -1)
 			{
 				$cq = mysql_query("SELECT * FROM characters WHERE CharacterID='".$row->CharacterID."';") or die(error_log("Ascender API had an MySQL Error: ".mysql_error()));
 				$crow = mysql_fetch_object($cq);

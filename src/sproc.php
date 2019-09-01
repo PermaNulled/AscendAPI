@@ -31,7 +31,6 @@ class Sproc {
 	//GetRecentMsgsXbox360
 	//GET /game/sproc?sproc=GetRecentMsgsXbox360&target=76561198009394515
 
-
 	//ClaimTutorialBossXbox360
 	//GET /game/sproc?sproc=ClaimTutorialBossXbox360&xuid=76561198046797610&level=11&align=2 HTTP/1.1", upstream: "fastcgi://unix:/run/php/php5.6-fpm.sock:", host: "new.thedefaced.org:80"
 
@@ -47,6 +46,9 @@ class Sproc {
 	//GET /game/sproc?sproc=GetTotemByLevelAndSeedXbox360&targetXuid=76561198009394515&levelId=6&levelSeed=458952197
 	
 
+
+
+	
 	//TODO: Port to use PDO instead of standard MySQL bullshit that's been deprecated.
 	//TODO: Make generic error function for logging.
 	function run()
@@ -71,10 +73,160 @@ class Sproc {
 	}
 
 
+
+	/* Deposit box doesn't seem to be used anymore */
+	//SetDepositBoxXbox360
+	//GET /game/sproc?sproc=SetDepositBoxXbox360&xuid=76561198009394516&sessionId=1606472040&boxId=6&boxState=3&itemId=1228
+	function SetDepositBoxXbox360()
+	{
+		$res = $this->resp->add_result();
+		$res->add_attribute("Error",1);
+		$this->resp->run();
+	}
+
+	//OpenDepositBox1Xbox360
+	//GET /game/sproc?sproc=OpenDepositBox1Xbox360&xuid=76561198009394516&sessionId=1975668134&boxId=7&souls=4000
+	function OpenDepositBox1Xbox360()
+	{
+		$res = $this->resp->add_result();
+		$res->add_attribute("Error",1);
+		$this->resp->run();
+	}
+
+	//AddDynamicLootConsumableXbox360
+	//GET /game/sproc?sproc=AddDynamicLootConsumableXbox360&xuid=76561198046797610&sessionId=749734676&chestId=144&name=Blessing_Fury&type=1&count=1 
+	function AddDynamicLootConsumableXbox360()
+	{
+		$steamID = $this->steamid;
+		$sessionId = (int)$_GET['sessionId'];
+		$chestId = (int)$_GET['chestId'];
+		$name = mysql_real_escape_string($_GET['name']);
+		$type = (int)$_GET['type'];
+		$count = (int)$_GET['count'];
+
+		$acq = "INSERT INTO consumables (SteamId,Name,Count,Type) VALUES ($steamID,'$name',$count,$type);";
+		$acr = mysql_query($acq) or die(error_log("Ascender API MySQL error(AddDynamicLootConsumableXbox360): ".mysql_error()));
+
+		$this->resp->run(); // don't need to respond with anything.
+	}
+
+	//AddAscEnticementConsumableXbox360
+	// GET /game/sproc?sproc=AddAscEnticementConsumableXbox360&xuid=76561198009394516&sessionId=908559420&name=Arcane_Summon_Void&type=1&count=2&align=3
+	function AddAscEnticementConsumableXbox360()
+	{
+		$steamID = $this->steamid;
+		$sessionId = (int)$_GET['sessionId'];
+		$name = mysql_real_escape_string($_GET['name']);
+		$type = (int)$_GET['type'];
+		$count = (int)$_GET['count'];
+		$align = (int)$_GET['align']; // not sure why they sent this here, it gets sent in Create Character, maybe to check if the item they're getting relates to the alignment.
+
+		//Account update query - We've finished ascending at this point and need to reset the ascension state.
+		$auq = "UPDATE accounts SET AscState=0 WHERE SteamId=$steamID;";
+		$aur = mysql_query($auq) or die(error_log("Ascender API MySQL error: ".mysql_error()));
+
+		//Insert the abilility to the account
+		$iaq = "INSERT INTO consumables (SteamId,Name,Count,Keep,Type) VALUES ($steamID,'$name',$count,1,$type);";
+		$lar = mysql_query($iaq) or die(error_log("Ascender API MySQL error:" .mysql_error()));
+
+
+		//Generic response...
+		$res = $this->resp->add_result();
+		$res->add_attribute("Error",1);
+		$this->resp->run();
+
+	}
+
+	//SacrificeCharacter5Xbox360
+	//GET /game/sproc?sproc=SacrificeCharacter5Xbox360&xuid=76561198009394515&sessionId=1946711610&id=110&lvl=5&cashedInWarXp=20549&keepAll=0&bossItemIds=1273%2C1284%2C1296%2C&bossAbilityIds=&abilityIds=&metaWarIds=&keepItemIds=&keepConsumableIds=&keepAbilityIds= 
+	function SacrificeCharacter5Xbox360()
+	{
+		$steamID = $this->steamid;
+		$sessonId = (int)$_GET['sessionId'];
+		$characterId = (int)$_GET['id'];
+		$lvl = (int)$_GET['lvl'];
+		$warXp = (int)$_GET['cashedInWarXp'];
+		$keepAll = (int)$_GET['keepAll'];
+		$bossItemIds = mysql_real_escape_string($_GET['bossItemIds']);
+		$bossAbilityIds = (int)$_GET['bossAbilityIds'];
+		$abilityIds = (int)$_GET['abilityIds'];
+		$metaWarIds = (int)$_GET['metaWarIds'];
+		$keepConsumableIds = (int)$_GET['keepConsumableIds'];
+		$keepAbilityIds = (int)$_GET['keepAbilityIds'];
+
+		$ciq = "SELECT Alignment FROM characters WHERE CharacterID='$characterId' AND SteamId='$steamID';";
+		$cir = mysql_query($ciq) or die(error_log("Asender API MySQL error: ".mysql_error()));
+		
+		if(mysql_num_rows($cir) > 0)
+		{
+			$cdo = mysql_fetch_object($cir);
+			$prev_alignment = $cdo->Alignment;
+		}	
+
+		switch($prev_alignment)
+		{
+			case 1:
+				$atxt = "Light";
+			break;
+			
+			case 2:
+				$atxt = "Dark";
+			break;
+
+			case 3:
+				$atxt = "Void";
+			break;
+		}
+
+		//Update character
+		$cuq = "UPDATE characters SET Alignment=0 WHERE CharacterID='$characterId' AND SteamId='$steamID';";
+		$cur = mysql_query($cuq) or die(error_log("Ascender API MySQL error: ".mysql_error()));
+
+		//Update account data
+		$uaq = "UPDATE accounts SET AscCount$atxt = AscCount$atxt + 1, warXp = warXp + $warXp, WarXp$atxt = WarXp$atxt + $warXp, CharLevelCap = CharLevelCap +5,AscLevelReqInc = AscLevelReqInc+5,charXp=0,AscState=2 WHERE SteamId=$steamID;";
+		$uar = mysql_query($uaq) or die(error_log("Ascender API MySQL error: ".mysql_error()));
+
+
+		//Generate SQL for keeping the equipped items.
+		$keepItems = explode(",",$bossItemIds);
+		$keepItemsSQL = "";
+
+		$index = 0;
+		foreach($keepItems as $keepItem)
+		{
+			if($index != count($keepItems))
+			{
+				$keepItemsSQL .= "NOT Id=".(int)$keepItem." OR ";
+			}
+			else
+			{
+				$keepItemsSQL .= "NOT Id=".(int)$keepItem;
+			}
+			$index++;
+		}
+
+		//Delete all items except those which are currently equipped.
+		$diq = "DELETE FROM items WHERE SteamId='".$steamID."' AND ".$keepItemsSQL.";";
+		$dir = mysql_query($diq) or die("Ascender API MySQL error (SacrificeCharacter5Xbox360 - delete items): ".error_log());
+
+
+		//TODO: Make seperate "boss" table and store level, alignment and etc about the character to be used in the boss table.
+
+		$res = $this->resp->add_result();
+		$res->add_attribute("Error",1);
+		$this->resp->run();
+
+	}
+
+
 	//EnterPurgatoryXbox360
 	//GET /game/sproc?sproc=EnterPurgatoryXbox360&xuid=76561198046797610&sessionId=1951473221
 	function EnterPurgatoryXbox360()
 	{
+		$steamID = $this->steamid;
+		$pupdateq = "UPDATE accounts SET AscState='1' WHERE SteamId='$steamID';";
+		$pupdater = mysql_query($pupdateq) or die(error_log("Ascender API MySQL error: ".mysql_error()));
+
 		//Generic response, could not find any handling code for this.
 		$res = $this->resp->add_result();
 		$res->add_attribute("Error",1);
@@ -86,6 +238,7 @@ class Sproc {
 	//AddDynamicLootItem1Xbox360&xuid=76561198009394515&sessionId=410562881&chestId=72&name=Armor_Component_179&resIdx=263
 	function AddDynamicLootItem1Xbox360()
 	{
+		//TODO: Populate chest unlocked table here so they can't use same chest multiple times.
 		$steamID = $this->steamid;
 		$sessionId = (int)$_GET['sessionId'];
 		$chestId = (int)$_GET['chestId'];
@@ -108,7 +261,7 @@ class Sproc {
 		$res->add_attribute("Xuid",$this->steamid);
 		$res->add_attribute("Id",$id);
 		$res->add_attribute("Level",1);
-		$res->add_attribute("Keep",1);
+		$res->add_attribute("Keep",0);
 		$res->add_attribute("DurabilityLost",0);
 		$res->add_attribute("ResIdx",$resIdx);
 		$res->add_attribute("Name",$name);
@@ -208,7 +361,6 @@ class Sproc {
 	//GET /game/sproc?sproc=AddLootItem1Xbox360&xuid=76561198046797610&sessionId=1359719260&chestId=26&name=Armor_leathermail_var_02&resIdx=203
 	// /game/sproc?sproc=AddLootItem1Xbox360&xuid=76561198046797610&sessionId=1476977440&chestId=26&name=Skull_Blade_of_Ice&resIdx=71
 	// NEXT CALL: /game/sproc?sproc=UpdateAccount8Xbox360&xuid=76561198046797610&sessionId=1476977440&charXp=121005&warXp=0&gameTime=33173&levelId=&hideHelmet=0
-	//TODO: Find a way to get the currently logged in character under the session.
 	function AddLootItem1Xbox360()
 	{
 		$steamID = $this->steamid;
@@ -233,7 +385,7 @@ class Sproc {
 		$res->add_attribute("Xuid",$this->steamid);
 		$res->add_attribute("Id",$id);
 		$res->add_attribute("Level",1);
-		$res->add_attribute("Keep",1);
+		$res->add_attribute("Keep",0);
 		$res->add_attribute("DurabilityLost",0);
 		$res->add_attribute("ResIdx",$resIdx);
 		$res->add_attribute("Name",$name);
@@ -255,9 +407,8 @@ class Sproc {
 		$type = (int)$_GET['type'];
 		$count = (int)$_GET['count'];
 
-		$icq = "INSERT INTO consumables (SteamId,Name,Count,Keep,Type) VALUES ($steamID,'$name',$type,$count)";
+		$icq = "INSERT INTO consumables (SteamId,Name,Count,Keep,Type) VALUES ($steamID,'$name',$count,0,$type)";
 		$icr = mysql_query($icq) or die(error_log("Ascender API MySQL error: ".mysql_error()));
-
 
 		$res = $this->resp->add_result();
 		$res->add_attribute("Error",1);
@@ -411,7 +562,6 @@ class Sproc {
 		$offerId = (int)$_GET['offerId'];
 		$resIdx = (int)$_GET['resIdx'];
 
-		//TODO: Find currently logged in character, ascending will probably break this code.
 		$cidq = "SELECT CharacterID FROM accounts WHERE SteamId='".$this->steamid."';" or die (error_log("Ascender API encountered a MySQL error: ".mysql_error()));
 		$hcid = mysql_query($cidq);
 
@@ -428,7 +578,7 @@ class Sproc {
 			$res->add_attribute("Xuid",$this->steamid);
 			$res->add_attribute("Id",$item_id);
 			$res->add_attribute("Level",1);
-			$res->add_attribute("Keep",1);
+			$res->add_attribute("Keep",0);
 			$res->add_attribute("DurabilityLost",0);
 			$res->add_attribute("ResIdx",$resIdx);
 			$res->add_attribute("Name",$name);
@@ -504,7 +654,7 @@ class Sproc {
 		$res->add_attribute("Name",$_GET['name']);
 		$res->add_attribute("Type",$_GET['type']);
 		$res->add_attribute("Count",$_GET['count']);
-		$res->add_attribute("Keep","1");
+		$res->add_attribute("Keep",0);
 
 		$this->resp->run();
 	}
@@ -539,7 +689,7 @@ class Sproc {
 
 		$res->add_attribute("Id",$ability_id);
 		$res->add_attribute("Upgrades","0");
-		$res->add_attribute("Keep","1");
+		$res->add_attribute("Keep",0);
 		$res->add_attribute("Name",$_GET['name']);
 
 		$this->resp->run();
@@ -641,30 +791,51 @@ class Sproc {
 		$equipNames = mysql_real_escape_string($_GET['equipNames']);
 		$equipIds = mysql_real_escape_string($_GET['equipIds']);
 
+		$equip_names = explode(",",$equipNames);
+		$equip_resids = explode(",",$equipResIds);
+		$equip_ids = explode(",",$equipIds);
+
 		$query = "INSERT INTO characters (SteamID,Alignment,Name,bodyParts,EquipmentIds,SkinColor,hairColor,Equipment) VALUES ('$this->steamid','$alignment','$name','$bodyparts','$equipResIds','$skinColor','$hairColor','$equipNames');";
 		$q = mysql_query($query) or die(error_log(" (insert) Ascender API encountered an MySQL error! Error: ".mysql_error(). " query: ".$query));
 		$character_id = mysql_insert_id();
 
 		$uq = mysql_query("UPDATE accounts SET CharacterID='$character_id' WHERE SteamId='$this->steamid'") or die(error_log("(update) Ascender API encountered a MySQL error! error: ".mysql_error()));
 
-		$equip_names = explode(",",$equipNames);
-		$equip_resids = explode(",",$equipResIds);
-
 		$equipment_ids = "";
-
+		$equipment_names = "";
 		$index = 0;
 		foreach($equip_names as $equipment_name)
 		{
-			$equipment_resid = mysql_real_escape_string($equip_resids[$index]);
-			$equipment_name = mysql_real_escape_string($equipment_name);
-			$eiq = mysql_query("INSERT INTO items (CharacterID,SteamId,ResIdx,Name,Keep,Level) VALUES ('$character_id','$this->steamid','$equipment_resid','$equipment_name','1','1');") or die(error_log("(insert equipment) Ascender API Encounterd a MySQL Error! - Error: ".mysql_error()));
 
-			$equipment_ids.="".mysql_insert_id().",";
+			if($equip_ids[$index] === 0)
+			{
+				$equipment_resid = mysql_real_escape_string($equip_resids[$index]);
+				$equipment_name = mysql_real_escape_string($equipment_name);
+				$eiq = mysql_query("INSERT INTO items (CharacterID,SteamId,ResIdx,Name,Keep,Level) VALUES ('$character_id','$this->steamid','$equipment_resid','$equipment_name','0','1');") or die(error_log("(insert equipment) Ascender API Encounterd a MySQL Error! - Error: ".mysql_error()));
+
+				$equipment_ids.="".mysql_insert_id().",";
+				$equipment_names.=$equipment_name.",";
+			}
+			else
+			{
+				$equipment_ids.= $equip_ids[$index].",";
+				$equipment_id = (int)$equip_ids[$index];
+
+				$enq = "SELECT Name FROM items WHERE Id=$equipment_id";
+				$enr = mysql_query($enq) or die(error_log("Ascender API MySQL error ( CreateCharacter4Xbox360 - equipids ): ".mysql_error()));
+
+				if(mysql_num_rows() > 0)
+				{
+					$o_equip = mysql_fetch_object($enr);
+					$equipment_names.=$o_equip->Name.",";
+				}
+			}
 
 			$index++;
 		}
 
-		$uqc = mysql_query("UPDATE characters SET EquipmentIds='".$equipment_ids."' WHERE CharacterID='".$character_id."';") or die(error_log("(update equip ids) Ascender API Encountered a MySQL error - Error:".mysql_error()));
+
+		$uqc = mysql_query("UPDATE characters SET EquipmentIds='".$equipment_ids."',Equipment='".$equipment_names."' WHERE CharacterID='".$character_id."';") or die(error_log("(update equip ids) Ascender API Encountered a MySQL error - Error:".mysql_error()));
 
 
 		$res = $this->resp->add_result();
@@ -782,23 +953,35 @@ class Sproc {
 
 	function GetPlayerItems1Xbox360() 
 	{
-		$query = "SELECT * FROM items WHERE SteamId='$this->steamid';";
-		$q  = mysql_query($query);
-		if(mysql_num_rows($q) > 0)
+		$cidq = "SELECT CharacterID FROM accounts WHERE SteamId='".$this->steamid."';" or die (error_log("Ascender API encountered a MySQL error: ".mysql_error()));
+		$hcid = mysql_query($cidq);
+
+		if(mysql_num_rows($hcid) > 0)
 		{
-			while($row = mysql_fetch_object($q))
+			$cido = mysql_fetch_object($hcid);
+			$characterID = $cido->CharacterID;
+		}
+		
+		if($characterID != 0)
+		{
+			$query = "SELECT * FROM items WHERE SteamId='$this->steamid';";
+			$q  = mysql_query($query);
+			if(mysql_num_rows($q) > 0)
 			{
-				$res = $this->resp->add_result();
-				$res->add_attribute("Id",$row->Id);
-				$res->add_attribute("Level",$row->Level);
-				$res->add_attribute("Xuid",$this->steamid);
-				$res->add_attribute("Keep",$row->Keep);
-				$res->add_attribute("DurabilityLost",$row->DurabilityLost);
-				$res->add_attribute("ResIdx",$row->ResIdx);
-				$res->add_attribute("Name",$row->Name);
-				$res->add_attribute("Rune0",$row->Rune0);
-				$res->add_attribute("Rune1",$row->Rune1);
-				$res->add_attribute("Rune2",$row->Rune2);
+				while($row = mysql_fetch_object($q))
+				{
+					$res = $this->resp->add_result();
+					$res->add_attribute("Id",$row->Id);
+					$res->add_attribute("Level",$row->Level);
+					$res->add_attribute("Xuid",$this->steamid);
+					$res->add_attribute("Keep",$row->Keep);
+					$res->add_attribute("DurabilityLost",$row->DurabilityLost);
+					$res->add_attribute("ResIdx",$row->ResIdx);
+					$res->add_attribute("Name",$row->Name);
+					$res->add_attribute("Rune0",$row->Rune0);
+					$res->add_attribute("Rune1",$row->Rune1);
+					$res->add_attribute("Rune2",$row->Rune2);
+				}
 			}
 		}
 
@@ -826,26 +1009,41 @@ class Sproc {
 
 	function GetCustomizerItemsXbox360()
 	{
-		$query = "SELECT bodyParts FROM characters WHERE SteamId='$this->steamid';";
-		$q = mysql_query($query) or die("Ascend API had an MySQL error (GetCustomizerItemsXbox360) error: ".mysql_error());
+		$cidq = "SELECT CharacterID FROM accounts WHERE SteamId='".$this->steamid."';" or die (error_log("Ascender API encountered a MySQL error: ".mysql_error()));
+		$hcid = mysql_query($cidq);
 
-		if(mysql_num_rows($q) > 0)
+		if(mysql_num_rows($hcid) > 0)
 		{
+			$c = mysql_fetch_object($hcid);
+			$characterID = $c->CharacterID;
 
-			$row = mysql_fetch_object($q);
-			$items = explode(",",$row->bodyParts);
-			$equipments = explode(",",$row->Equipment);
+		}
 
-			foreach($items as $item)
+		if( $characterID != 0 )
+		{
+		
+			$query = "SELECT bodyParts,Equipment FROM characters WHERE SteamId='$this->steamid' and CharacterID='$characterID';";
+			$q = mysql_query($query) or die("Ascend API had an MySQL error (GetCustomizerItemsXbox360) error: ".mysql_error());
+
+			if(mysql_num_rows($q) > 0)
 			{
 
-				if(strlen($item) > 0)
-				{
-					$res = $this->resp->add_result();
-					$res->add_attribute("Name",$item);
-				}
-			}
+				$row = mysql_fetch_object($q);
+				$items = explode(",",$row->bodyParts);
+				$equipments = explode(",",$row->Equipment);
 
+				foreach($items as $item)
+				{
+
+					if(strlen($item) > 0)
+					{
+						$res = $this->resp->add_result();
+						$res->add_attribute("Name",$item);
+					}
+				}
+
+			}
+		
 		}
 
 		$this->resp->run();
@@ -854,89 +1052,102 @@ class Sproc {
 
 	function GetStoreCustomizerItemsXbox360()
 	{
+
 		for($i = 0;$i<21;$i++)
 		{
+			//These are 'unlocked' aka free
+			if($i == 1 || $i == 2 || $i == 7)
+				continue;
+
 			$num_padded = sprintf("%02d", $i);
 			$this->AddStoreItem("Head$num_padded");
 		}
 
 		for($i = 0;$i<11;$i++)
 		{
+			//These are 'unlocked' aka free.
+			if($i == 4 || $i == 10)
+				continue;
+
 			$num_padded = sprintf("%02d", $i);
 			$this->AddStoreItem("Hair$num_padded");
 		}
 
 		for($i = 0;$i<10;$i++)
 		{
+			//These are 'unlocked' aka free
+			if($i == 2 || $i == 5)
+				continue;
+
 			$num_padded = sprintf("%02d", $i);
 			$this->AddStoreItem("Beard$num_padded");
 		}
 
-		$this->AddStoreItem("1H_Starting_Basic","1","WEAPON");
-		$this->AddStoreItem("2HS_Starting_Basic","1","WEAPON");
-		$this->AddStoreItem("2H_Starting_Basic","1","WEAPON");
-		$this->AddStoreItem("1H_starting_Uncommon","1","WEAPON");
-		$this->AddStoreItem("2HS_Starting_Uncommon","1","WEAPON");
-		$this->AddStoreITem("2H_Starting_Uncommon","1","WEAPON");
-		$this->AddStoreItem("1H_starting_Store","1","WEAPON");
-		$this->AddStoreItem("2HS_Starting_Store","1","WEAPON");
-		$this->AddStoreItem("2H_Starting_Store","1","WEAPON");
-		$this->AddStoreItem("Starting_Armor_01_Chest","1","BODY");
-		$this->AddStoreItem("Starting_Armor_01_Boots","1","FEET");
-		$this->AddStoreItem("Starting_Armor_01_Gauntlets","1","HANDS");
-		$this->AddStoreItem("Starting_Armor_01_Helmet","1","HEAD");
-		$this->AddStoreItem("Starting_Armor_02_Chest","1","BODY");
-		$this->AddStoreItem("Starting_Armor_02_Boots","1","FEET");
-		$this->AddStoreItem("Starting_Armor_02_Gauntlets","1","HANDS");
-		$this->AddStoreItem("Starting_Armor_02_Helmet","1","HEAD");
-		$this->AddStoreItem("Starting_Armor_03_Chest","1","BODY");
-		$this->AddStoreItem("Starting_Armor_03_Boots","1","FEET");
-		$this->AddStoreItem("Starting_Armor_03_Gauntlets","1","HANDS");
-		$this->AddStoreItem("Starting_Armor_03_Helmet","1","HEAD");
-		$this->AddStoreItem("Armor_Dark01_Helmet_lvl1","1","HEAD");
-		$this->AddStoreItem("Armor_Dark01_Chest_lvl1","1","BODY");
-		$this->AddStoreItem("Armor_Dark01_Gauntlets_lvl1","1","HANDS");
-		$this->AddStoreItem("demo_armor_boots_general_01","1","FEET");
-		$this->AddStoreItem("Armor_Helmet_Void01","1","HEAD");
-		$this->AddStoreItem("Armor_Void01","1","BODY");
-		$this->AddStoreItem("Armor_Gauntlets_Void01","1","HANDS");
-		$this->AddStoreItem("Armor_Boots_Void01","1","FEET");
-		$this->AddStoreItem("Armor_Chain02_Helmet","1","HEAD");
-		$this->AddStoreItem("Armor_Chain02_Chest","1","BODY");
-		$this->AddStoreItem("Armor_Chain02_Gauntlets","1","HANDS");
-		$this->AddStoreItem("Armor_Chain02_Boots","1","FEET");
-		$this->AddStoreItem("Armor_Chain03_Helmet","1","HEAD");
-		$this->AddStoreItem("Armor_Chain03_Chest","1","BODY");
-		$this->AddStoreItem("Armor_Chain03_Gauntlets","1","HANDS");
-		$this->AddStoreItem("Armor_Chain03_Boots","1","FEET");
-		$this->AddStoreItem("Armor_Helmet_Void02","1","HEAD");
-		$this->AddStoreItem("CaosPlateArmor","1","BODY");
-		$this->AddStoreItem("Armor_Rust_Gauntlets","1","HANDS");
-		$this->AddStoreItem("Armor_Rust_Boots","1","FEET");
-		$this->AddStoreItem("Armor_Leather04_Helmet","1","HEAD");
-		$this->AddStoreItem("Armor_Leather04_Chest","1","BODY");
-		$this->AddStoreItem("Armor_Leather04_Gauntlets","1","HANDS");
-		$this->AddStoreItem("Armor_Leather04_Boots","1","FEET");
-		$this->AddStoreItem("NoHair");
-		$this->AddStoreItem("NoBeard");
-		$this->AddStoreItem("CustomizerColors");
-		$this->AddStoreItem("CustomizerColor_Skin1");
-		$this->AddStoreItem("CustomizerColor_Skin9");
-		$this->AddStoreItem("CustomizerColor_Brown");
-		$this->AddStoreItem("CustomizerColor_Brown_Dark");
-		$this->AddStoreItem("CustomizerColor_Brown_Dark2");
-		$this->AddStoreItem("CustomizerColor_Skin2");
-		$this->AddStoreItem("CustomizerColor_Skin3");
-		$this->AddStoreItem("CustomizerColor_Skin4");
-		$this->AddStoreItem("CustomizerColor_Skin5");
-		$this->AddStoreItem("CustomizerColor_Skin6");
-		$this->AddStoreItem("CustomizerColor_Skin7");
-		$this->AddStoreItem("CustomizerColor_Skin8");
-		$this->AddStoreItem("CustomizerColor_White");
-		$this->AddStoreItem("CustomizerColor_Purple");
-		$this->AddStoreItem("CustomizerColor_Green_Light");
-		$this->AddStoreItem("CustomizerColor_Orange");
-		$this->AddStoreItem("CustomizerColor_Blue_Dark");
+		//$this->AddStoreItem("1H_Starting_Basic","570","WEAPON"); // unlocked
+		//$this->AddStoreItem("2HS_Starting_Basic","570","WEAPON"); // unlocked
+		//$this->AddStoreItem("2H_Starting_Basic","570","WEAPON"); // unlocked
+		$this->AddStoreItem("1H_starting_Uncommon","1710","WEAPON");
+		$this->AddStoreItem("2HS_Starting_Uncommon","1710","WEAPON");
+		$this->AddStoreITem("2H_Starting_Uncommon","1710","WEAPON");
+		$this->AddStoreItem("1H_starting_Store","3420","WEAPON");
+		$this->AddStoreItem("2HS_Starting_Store","3420","WEAPON");
+		$this->AddStoreItem("2H_Starting_Store","3420","WEAPON");
+		//$this->AddStoreItem("Starting_Armor_01_Chest","371","BODY"); // unlocked
+		//$this->AddStoreItem("Starting_Armor_01_Boots","342","FEET");  // unlocked
+		//$this->AddStoreItem("Starting_Armor_01_Gauntlets","342","HANDS"); // unlocked
+		//$this->AddStoreItem("Starting_Armor_01_Helmet","356","HEAD"); // unlocked
+		//$this->AddStoreItem("Starting_Armor_02_Chest","371","BODY"); // unlocked
+		//$this->AddStoreItem("Starting_Armor_02_Boots","342","FEET"); // unlocked
+		//$this->AddStoreItem("Starting_Armor_02_Gauntlets","342","HANDS"); // unlocked
+		//$this->AddStoreItem("Starting_Armor_02_Helmet","356","HEAD"); // unlocked
+		//$this->AddStoreItem("Starting_Armor_03_Chest","371","BODY"); // unlocked
+		//$this->AddStoreItem("Starting_Armor_03_Boots","342","FEET"); // unlocked
+		//$this->AddStoreItem("Starting_Armor_03_Gauntlets","342","HANDS"); // unlocked
+		//$this->AddStoreItem("Starting_Armor_03_Helmet","356","HEAD"); // unlocked
+		$this->AddStoreItem("Armor_Dark01_Helmet_lvl1","713","HEAD");
+		$this->AddStoreItem("Armor_Dark01_Chest_lvl1","741","BODY");
+		$this->AddStoreItem("Armor_Dark01_Gauntlets_lvl1","684","HANDS");
+		$this->AddStoreItem("demo_armor_boots_general_01","684","FEET");
+		$this->AddStoreItem("Armor_Helmet_Void01","713","HEAD");
+		$this->AddStoreItem("Armor_Void01","741","BODY");
+		$this->AddStoreItem("Armor_Gauntlets_Void01","684","HANDS");
+		$this->AddStoreItem("Armor_Boots_Void01","684","FEET");
+		$this->AddStoreItem("Armor_Chain02_Helmet","713","HEAD");
+		$this->AddStoreItem("Armor_Chain02_Chest","741","BODY");
+		$this->AddStoreItem("Armor_Chain02_Gauntlets","684","HANDS");
+		$this->AddStoreItem("Armor_Chain02_Boots","684","FEET");
+		$this->AddStoreItem("Armor_Chain03_Helmet","1069","HEAD");
+		$this->AddStoreItem("Armor_Chain03_Chest","1113","BODY");
+		$this->AddStoreItem("Armor_Chain03_Gauntlets","1026","HANDS");
+		$this->AddStoreItem("Armor_Chain03_Boots","1026","FEET");
+		$this->AddStoreItem("Armor_Helmet_Void02","1425","HEAD");
+		$this->AddStoreItem("CaosPlateArmor","1482","BODY");
+		$this->AddStoreItem("Armor_Rust_Gauntlets","1368","HANDS");
+		$this->AddStoreItem("Armor_Rust_Boots","1368","FEET");
+		$this->AddStoreItem("Armor_Leather04_Helmet","2138","HEAD");
+		$this->AddStoreItem("Armor_Leather04_Chest","2223","BODY");
+		$this->AddStoreItem("Armor_Leather04_Gauntlets","2052","HANDS");
+		$this->AddStoreItem("Armor_Leather04_Boots","2052","FEET");
+		//$this->AddStoreItem("NoHair"); // unlocked
+		//$this->AddStoreItem("NoBeard"); // unlocked
+		//$this->AddStoreItem("CustomizerColors");
+		//$this->AddStoreItem("CustomizerColor_Skin1"); // unlocked
+		//$this->AddStoreItem("CustomizerColor_Skin9"); // unlocked
+		//$this->AddStoreItem("CustomizerColor_Brown"); // unlocked
+		//$this->AddStoreItem("CustomizerColor_Brown_Dark"); // unlocked
+		//$this->AddStoreItem("CustomizerColor_Brown_Dark2"); // unlocked
+		//$this->AddStoreItem("CustomizerColor_Skin2"); // unlocked
+		//$this->AddStoreItem("CustomizerColor_Skin3"); // unlocked
+		//$this->AddStoreItem("CustomizerColor_Skin4"); // unlocked
+		//$this->AddStoreItem("CustomizerColor_Skin5"); // unlocked
+		//$this->AddStoreItem("CustomizerColor_Skin6"); // unlocked
+		//$this->AddStoreItem("CustomizerColor_Skin7"); // unlocked
+		//$this->AddStoreItem("CustomizerColor_Skin8"); // unlocked
+		//$this->AddStoreItem("CustomizerColor_White"); // unlocked
+		$this->AddStoreItem("CustomizerColor_Purple"); 
+		$this->AddStoreItem("CustomizerColor_Green_Light"); 
+		$this->AddStoreItem("CustomizerColor_Orange"); 
+		$this->AddStoreItem("CustomizerColor_Blue_Dark"); 
 		$this->AddStoreItem("CustomizerColor_Green_Dark");
 		$this->AddStoreItem("CustomizerColor_Purple_Dark");
 		$this->AddStoreItem("CustomizerColor_Red_Dark");
@@ -959,6 +1170,59 @@ class Sproc {
 
 	function GetPlayerBossesForCreatorXbox360() // Possibly Player specific.
 	{
+
+		$creator = (int)$_GET['creator']; 
+		$limit = (int)$_GET['limit'];
+		$idStart = (int)$_GET['idStart'];
+
+		//$this->resp->run()
+		
+		$res = $this->resp->add_result();
+		$res->add_attribute("Id",3);
+		$res->add_attribute("CreatorXuid",$creator);
+		$res->add_attribute("SteamId",$creator);
+		$res->add_attribute("Alignment",1);
+		$res->add_attribute("Lvl",5);
+		$res->add_attribute("DesiredPointId",1);
+		$res->add_attribute("WarValue",2115);
+		$res->add_attribute("AscCountLight",1);
+		$res->add_attribute("AscCountDark",0);
+		$res->add_attribute("AscCoutnVoid",0);
+		$res->add_attribute("ShrineCount",0);
+		$res->add_attribute("AltarCount",0);
+		$res->add_attribute("PlayerKills",0);
+		$res->add_attribute("DeathCount",0);
+		$res->add_attribute("EarnedWarXp",0);
+		$res->add_attribute("Name",base64_encode("PermaNil"));
+		$res->add_attribute("BodyParts","Head15,NoHair,NoBeard,CaosBody,CaosHands,CaosFeet,");
+		$res->add_attribute("SkinColor","AgAAAAAA8fDwPfHwcD4AAIA/");
+		$res->add_attribute("HairColor","AgAAAIA/AAAAAAAAAAAAAIA/");
+
+
+		//$this->resp->run();
+		$res = $this->resp->add_result();
+		$res->add_attribute("Id",108);
+		$res->add_attribute("CreatorXuid",$creator);
+		$res->add_attribute("SteamId",$creator);
+		$res->add_attribute("Alignment",1);
+		$res->add_attribute("Lvl",5);
+		$res->add_attribute("DesiredPointId",2);
+		$res->add_attribute("WarValue",0);
+		$res->add_attribute("AscCountLight",1);
+		$res->add_attribute("AscCountDark",0);
+		$res->add_attribute("AscCoutnVoid",0);
+		$res->add_attribute("ShrineCount",0);
+		$res->add_attribute("AltarCount",0);
+		$res->add_attribute("PlayerKills",0);
+		$res->add_attribute("DeathCount",0);
+		$res->add_attribute("EarnedWarXp",0);
+		$res->add_attribute("Name",base64_encode("Test01"));
+		$res->add_attribute("BodyParts","Head05,Hair05,Beard03,CaosBody,CaosHands,CaosFeet,");
+		$res->add_attribute("SkinColor","AgAAAAAA8fDwPfHwcD4AAIA/");
+		$res->add_attribute("HairColor","AgAAAIA/AAAAAAAAAAAAAIA/");
+
+
+
 		$this->resp->run();
 	}
 
@@ -1013,6 +1277,10 @@ class Sproc {
 
 	function GetRegionsXbox360()
 	{
+		$res_region1 = $this->resp->add_result();
+		$res_region1->add_attribute("Id","0");
+		$res_region1->add_attribute("Name","RegionName_World_01");
+
 		$res_region1 = $this->resp->add_result();
 		$res_region1->add_attribute("Id","1");
 		$res_region1->add_attribute("Name","RegionName_World_01");
@@ -1168,9 +1436,9 @@ class Sproc {
 		$res->add_attribute("CharCountLight",$CharactersLightCount);
 		$res->add_attribute("CharCountDark",$CharactersDarkCount);
 		$res->add_attribute("CharCountVoid",$CharactersVoidCount);
-		$res->add_attribute("BossCountLight",0);
-		$res->add_attribute("BossCountDark",0);
-		$res->add_attribute("BossCountVoid",0);
+		$res->add_attribute("BossCountLight",2);
+		$res->add_attribute("BossCountDark",2);
+		$res->add_attribute("BossCountVoid",2);
 		$res->add_attribute("ChallengeWinsLight",0);
 		$res->add_attribute("ChallengeWinsDark",0);
 		$res->add_attribute("ChallengeWinsVoid",0);
